@@ -9,23 +9,33 @@ SELECT ?p (MAX(?s2) AS ?max_s)  WHERE {
     BIND("""
     PREFIX ex: <http://example.org/>
     CONSTRUCT {
-        ?p ex:has_path ?p2 .
+        ?p ex:has_path ?p1 .
+        ?p1 ex:has_type ?t1.
+        ?p1 ex:has_size ?s1 .
+        ?new ex:has_path ?p2 .
         ?p2 ex:has_type ?t2.
         ?p2 ex:has_size ?s2 .
+
     } WHERE {
         graph ?gin {
-            ?root ex:has_path ?p1 .
+          {
+            ?p ex:has_path ?p1 .
+            ?p1 ex:has_type ?t1 .
+            ?p1 ex:has_size ?s1 .
+            FILTER (str(?t1)="file")
+          } UNION {
+            ?p ex:has_path ?p1 .
             ?p1 ex:has_type ?t1 .
             ?p1 ex:has_size ?s1 .
             FILTER (str(?t1)="directory")
             BIND(ex:SLM-READDIR(?p1,?p1) as ?rdir)
             OPTIONAL {
                 GRAPH ?rdir {
-                    ?p1 ex:has_path ?p2 .
+                    ?new ex:has_path ?p2 .
                     ?p2 ex:has_type ?t2.
                     ?p2 ex:has_size ?s2 .
                 }
-            }
+            }}
         }
     } """ AS ?query_str)
     BIND(ex:SLM-RECURSE(?query_str,?ginit,3) AS ?out)
