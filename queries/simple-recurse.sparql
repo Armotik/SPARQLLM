@@ -14,12 +14,13 @@ SELECT ?s ?p ?o WHERE {
     CONSTRUCT {
       ?x ex:linkedTo ?z .
     } WHERE {
+       GRAPH ?gin {
       {
         ?x ex:linkedTo ?y .
         ?y ex:linkedTo ?z .
       } UNION { 
         ?x ex:linkedTo ?z .
-      }
+      }}
     }
   """ AS ?query_str)
 
