@@ -1,0 +1,47 @@
+# run with slm-run --load ./data/tape.nq --format nquads --config config.ini -f queries/tape.sparql --debug
+
+PREFIX ex: <http://example.org/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT * WHERE {
+  BIND("""
+    PREFIX ex: <http://example.org/>
+    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    SELECT ?gout WHERE {
+      GRAPH ?gin {
+        ex:head ex:at ?cell ;
+                ex:state ?current_state .
+        ?cell ex:value ?current_value ;
+              ex:right ?next_cell .
+        ?next_cell ex:value ?next_value .
+      }
+
+      GRAPH <http://example.org/Transition> {
+        ?t ex:fromState ?current_state ;
+           ex:read ?current_value ;
+           ex:toState ?new_state ;
+           ex:write ?new_value ;
+           ex:move 'R' .
+      }
+
+    BIND(IRI(CONCAT('http://example.org/state_', STR(?cell), '_', ?new_state)) AS ?gout_name)
+
+    BIND(CONCAT(
+    '<http://example.org/head> <http://example.org/at> <', STR(?next_cell), '> .\\n',
+    '<http://example.org/head> <http://example.org/state> "', ?new_state, '" .\\n',
+    '<', STR(?cell), '> <http://example.org/value> "', ?new_value, '" . \\n',
+    '<', STR(?cell), '> <http://example.org/right> <', STR(?next_cell), '> . \\n',
+    '<', STR(?next_cell), '> <http://example.org/value> "', ?next_value, '" . \\n'
+    ) AS ?triples)
+
+      BIND(ex:SLM-CONSTRUCT(?triples, ?gout_name,?gin) AS ?gout)
+    }
+  """ AS ?query_str)
+
+  BIND(ex:SLM-RECURSE(?query_str, "?gin", <http://example.org/InitialTapeGraph>, 10) AS ?final_graph)
+
+  GRAPH ?final_graph { ?s <http://example.org/has_graph> ?rgraph }
+  # GRAPH ?rgraph {
+  #   ?s1 ?p1 ?o1
+  #   }
+}

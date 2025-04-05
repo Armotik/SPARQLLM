@@ -1,30 +1,38 @@
-# run with slm-run --config config.ini -f queries/recurse.sparql --debug
+# run with slm-run --config config.ini -f queries/directory_recurse.sparql --debug
 
 
 PREFIX ex: <http://example.org/>
-SELECT (MAX(?s) AS ?max_s)  WHERE {
+SELECT ?p (MAX(?s2) AS ?max_s)  WHERE {
     ## init recursion
     BIND(ex:SLM-FILE("./SPARQLLM") AS ?root)
     BIND(ex:SLM-READDIR(?root,?root) AS ?ginit)
     BIND("""
     PREFIX ex: <http://example.org/>
-    SELECT DISTINCT ?gout WHERE {
-        GRAPH ?gin {
+    CONSTRUCT {
+        ?p ex:has_path ?p2 .
+        ?p2 ex:has_type ?t2.
+        ?p2 ex:has_size ?s2 .
+    } WHERE {
+        graph ?gin {
             ?root ex:has_path ?p1 .
-            ?p1 ex:has_type ?t1.
+            ?p1 ex:has_type ?t1 .
             ?p1 ex:has_size ?s1 .
-            filter (str(?t1)="directory")
-        } 
-        BIND(ex:SLM-READDIR(?p1,?p1) as ?gout)
-        OPTIONAL {
-            GRAPH ?gout {
-                ?p1 ex:has_path ?p2 .
-                ?p2 ex:has_type ?t2.
-                ?p2 ex:has_size ?s2 .
+            FILTER (str(?t1)="directory")
+            BIND(ex:SLM-READDIR(?p1,?p1) as ?rdir)
+            OPTIONAL {
+                GRAPH ?rdir {
+                    ?p1 ex:has_path ?p2 .
+                    ?p2 ex:has_type ?t2.
+                    ?p2 ex:has_size ?s2 .
+                }
             }
         }
     } """ AS ?query_str)
-    BIND(ex:SLM-RECURSE(?query_str,'?gin',?ginit,3) AS ?allg)
-    GRAPH ?allg {?init ex:has_graph ?g }
-    GRAPH ?g {?p ex:has_size ?s .}
-}        
+    BIND(ex:SLM-RECURSE(?query_str,?ginit,3) AS ?out)
+    GRAPH ?out {
+        ?p ex:has_path ?p2 .
+        ?p2 ex:has_type ?t2.
+        ?p2 ex:has_size ?s2 .
+     } 
+}
+        

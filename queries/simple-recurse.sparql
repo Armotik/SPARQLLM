@@ -1,0 +1,31 @@
+PREFIX ex: <http://example.org/>
+
+SELECT ?s ?p ?o WHERE {
+  BIND(ex:SLM-GRAPH("""
+    PREFIX ex: <http://example.org/>
+    ex:a ex:linkedTo ex:b .
+    ex:b ex:linkedTo ex:c .
+    ex:c ex:linkedTo ex:d .
+    ex:x ex:linkedTo ex:y .
+  """, <ex:init>) AS ?ginit)
+
+  BIND("""
+    PREFIX ex: <http://example.org/>
+    CONSTRUCT {
+      ?x ex:linkedTo ?z .
+    } WHERE {
+      {
+        ?x ex:linkedTo ?y .
+        ?y ex:linkedTo ?z .
+      } UNION { 
+        ?x ex:linkedTo ?z .
+      }
+    }
+  """ AS ?query_str)
+
+  BIND(ex:SLM-RECURSE(?query_str, ?ginit, 10) AS ?out)
+
+  GRAPH ?out {
+    ?s ?p ?o .
+  }
+}
