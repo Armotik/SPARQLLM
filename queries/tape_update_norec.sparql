@@ -2,53 +2,34 @@
 
 PREFIX ex: <http://example.org/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-
-SELECT * WHERE {
-  BIND("""
-    PREFIX ex: <http://example.org/>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-#    DELETE {
-#      GRAPH ?gin {
-#        ex:head ex:at ?cell ;
-#            ex:state ?current_state .
-#        ?cell ex:value ?current_value .
-#      }
-#    }  
-    INSERT {
-      GRAPH ?gin {
-      ex:head ex:at ?next_cell .
-      ex:head ex:state ?new_state .
-      ?cell ex:value ?new_value . 
-      ?cell ex:tagada 0
-      }
-    }
-    WHERE {
-      GRAPH ?gin {
-      ex:head ex:at ?cell ;
-              ex:state ?current_state .
-      ?cell ex:value ?current_value ;
-            ex:right ?next_cell .
-      ?next_cell ex:value ?next_value .
-      }
-      GRAPH <http://example.org/Transition> {
-      ?t ex:fromState ?current_state ;
-          ex:read ?current_value ;
-          ex:toState ?new_state ;
-          ex:write ?new_value ;
-          ex:move 'R' .
-      }
-    } #where 
-  """ AS ?query_str)
-
-  BIND(ex:SLM-RECURSE-UPDATE(?query_str, <http://example.org/InitialTapeGraph>, 10) AS ?final_graph)
-
-  GRAPH ?final_graph { 
-    {
-       ex:head ex:at ?head .
-       ex:head ex:state ?state 
-    } union {
-      ?cell ex:value ?new_value #coalesce
-    }
-
-  }   
+DELETE {
+  GRAPH ?gin {
+    ex:head ex:at ?cell ;
+        ex:state ?current_state .
+    ?cell ex:value ?current_value .
+  }
+}  
+INSERT {
+  GRAPH ?gin {
+  ex:head ex:at ?next_cell .
+  ex:head ex:state ?new_state .
+  ?cell ex:value ?new_value . 
+  ?cell ex:tagada 0
+  }
 }
+WHERE {
+  GRAPH ?gin {
+  ex:head ex:at ?cell ;
+          ex:state ?current_state .
+  ?cell ex:value ?current_value ;
+        ex:right ?next_cell .
+  ?next_cell ex:value ?next_value .
+  }
+  GRAPH <http://example.org/Transition> {
+  ?t ex:fromState ?current_state ;
+      ex:read ?current_value ;
+      ex:toState ?new_state ;
+      ex:write ?new_value ;
+      ex:move 'R' .
+  }
+} #where 

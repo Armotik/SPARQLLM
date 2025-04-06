@@ -7,13 +7,13 @@ SELECT * WHERE {
   BIND("""
     PREFIX ex: <http://example.org/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-#    DELETE {
-#      GRAPH ?gin {
-#        ex:head ex:at ?cell ;
-#            ex:state ?current_state .
-#        ?cell ex:value ?current_value .
-#      }
-#    }  
+    DELETE {
+      GRAPH ?gin {
+        ex:head ex:at ?cell ;
+            ex:state ?current_state .
+        ?cell ex:value ?current_value .
+      }
+    }  
     INSERT {
       GRAPH ?gin {
       ex:head ex:at ?next_cell .
