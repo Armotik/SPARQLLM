@@ -14,6 +14,9 @@ from SPARQLLM.udf.SPARQLLM import store
 
 from SPARQLLM.config import ConfigSingleton
 from SPARQLLM.utils.utils import print_result_as_table
+from rdflib.plugins.sparql.parser import parseQuery, parseUpdate
+
+
 
 import logging
 import configparser
@@ -21,6 +24,15 @@ import importlib
 
 slm_timeout = 10
 slm_ollama_model = "gpt2"
+
+
+def is_update_query(sparql_query: str) -> bool:
+    try:
+        # Si le parsing via parseUpdate réussit, c'est une requête d'update
+        parseUpdate(sparql_query)
+        return True
+    except Exception:
+        return False
 
 def configure_udf(config_file):
     config = configparser.ConfigParser()
@@ -127,25 +139,29 @@ def slm_cmd(query, file, config,load,format="xml",debug=False,keep_store=None,ou
 
 
     #    explain(query)
-    qres = store.query(query_str)
-#    print(f"qres:{qres.type}")
-    if (qres.type=="CONSTRUCT"):  # Vérifier si c'est un CONSTRUCT
-        if output_result is not None:
-            if not output_result.endswith(".ttl"):
-                output_result += ".ttl"
-
-            qres.serialize(destination=output_result, format="turtle")  # Sauvegarde en Turtle
-        else:
-            print(qres.serialize(format="turtle").decode("utf-8"))  # Affichage en console
+    if is_update_query(query_str):
+        logging.info("Executing update query")
+        store.update(query_str)
     else:
-        if output_result is not None:
-            with open(output_result, 'w', newline='', encoding='utf-8') as f:
-                writer = csv.writer(f)
-                writer.writerow(qres.vars)  # En-têtes
-                for row in qres:
-                    writer.writerow(row)
+        qres = store.query(query_str)
+#    print(f"qres:{qres.type}")
+        if (qres.type=="CONSTRUCT"):  # Vérifier si c'est un CONSTRUCT
+            if output_result is not None:
+                if not output_result.endswith(".ttl"):
+                    output_result += ".ttl"
+
+                qres.serialize(destination=output_result, format="turtle")  # Sauvegarde en Turtle
+            else:
+                print(qres.serialize(format="turtle").decode("utf-8"))  # Affichage en console
         else:
-            print_result_as_table(qres)
+            if output_result is not None:
+                with open(output_result, 'w', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(qres.vars)  # En-têtes
+                    for row in qres:
+                        writer.writerow(row)
+            else:
+                print_result_as_table(qres)
 
     if keep_store is not None:
         logging.info(f"storing collected data in {keep_store}")

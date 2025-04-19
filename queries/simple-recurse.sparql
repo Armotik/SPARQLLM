@@ -12,14 +12,14 @@ SELECT ?s ?p ?o WHERE {
   BIND("""
     PREFIX ex: <http://example.org/>
     CONSTRUCT {
-      ?x ex:linkedTo ?z .
+      ?x ?p ?z .
     } WHERE {
        GRAPH ?gin {
       {
-        ?x ex:linkedTo ?y .
-        ?y ex:linkedTo ?z .
+        ?x ?p ?y .
+        ?y ?p ?z .
       } UNION { 
-        ?x ex:linkedTo ?z .
+        ?x ?p ?z .
       }}
     }
   """ AS ?query_str)

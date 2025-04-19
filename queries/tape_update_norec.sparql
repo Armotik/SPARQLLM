@@ -1,4 +1,4 @@
-# run with slm-run --load ./data/tape.nq --format nquads --config config.ini -f queries/tape_update.sparql --debug
+# run with slm-run --load ./data/tape.nq --format nquads --config config.ini -f queries/tape_update_norec.sparql --debug --keep-store out.nq
 
 PREFIX ex: <http://example.org/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>

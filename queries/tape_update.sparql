@@ -9,8 +9,8 @@ SELECT * WHERE {
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     DELETE {
       GRAPH ?gin {
-        ex:head ex:at ?cell ;
-            ex:state ?current_state .
+        ex:head ex:at ?cell .
+        ex:head ex:state ?current_state .
         ?cell ex:value ?current_value .
       }
     }  
@@ -19,7 +19,7 @@ SELECT * WHERE {
       ex:head ex:at ?next_cell .
       ex:head ex:state ?new_state .
       ?cell ex:value ?new_value . 
-      ?cell ex:tagada 0
+      ?cell ex:tagada ?new_value
       }
     }
     WHERE {
@@ -40,14 +40,15 @@ SELECT * WHERE {
     } #where 
   """ AS ?query_str)
 
-  BIND(ex:SLM-RECURSE-UPDATE(?query_str, <http://example.org/InitialTapeGraph>, 10) AS ?final_graph)
+  BIND(ex:SLM-RECURSE-UPDATE(?query_str, <http://example.org/InitialTapeGraph>,1) AS ?final_graph)
 
   GRAPH ?final_graph { 
     {
        ex:head ex:at ?head .
-       ex:head ex:state ?state 
+       ex:head ex:state ?state .
     } union {
-      ?cell ex:value ?new_value #coalesce
+      ?cell ex:value ?new_value .#coalesce
+#      ?cell ex:tagada ?tagada
     }
 
   }   
