@@ -1,0 +1,16 @@
+# run with slm-run --config config.ini -f queries/simple-readdir.sparql --debug
+
+
+PREFIX ex: <http://example.org/>
+SELECT *
+WHERE {
+    BIND(URI(ex:SLM-FILE("./data/events")) AS ?root)
+    BIND(ex:SLM-READDIR(?root,?root) AS ?g)
+    GRAPH ?g {
+        ?root ex:has_path ?p1 .
+        ?p1 ex:has_type ?t1.
+        ?p1 ex:has_size ?s1 .
+        filter (str(?t1)="file")
+        filter (STRENDS(str(?p1), ".txt"))
+    } 
+}

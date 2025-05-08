@@ -24,34 +24,92 @@ config = ConfigSingleton()
 model = config.config['Requests']['SLM-GROQ-MODEL']
 
 api_key = os.environ.get("GROQ_API_KEY", "default-api-key")
-client = Groq(api_key=api_key)
+client = Groq(api_key=api_key,max_retries=0,)
 
-def call_groq_api(client, model, prompt, max_retries=5):
-    """Call GROQ while managing 429 error."""
-    retry_delay = 1  # Délai initial en secondes
-    time.sleep(retry_delay)
-    for attempt in range(max_retries):
+def parse_reset_duration(duration_str):
+    """
+    Convert strings like '16m10.288s' or '57.912s' to seconds (float).
+    """
+    match = re.match(r"(?:(\d+)m)?([\d.]+)s", duration_str)
+    if not match:
+        return 60  # fallback
+    minutes = int(match.group(1)) if match.group(1) else 0
+    seconds = float(match.group(2))
+    return minutes * 60 + seconds
+
+def call_groq_api(client, model, prompt, max_retries=5, max_wait=120):
+    import hashlib
+
+    retry_delay = 1
+    prompt_hash = hashlib.sha256(prompt.encode('utf-8')).hexdigest()
+
+    for attempt in range(1, max_retries + 1):
         try:
             chat_response = client.chat.completions.create(
                 model=model,
-                messages=[{ "role": "system",
-                            "content": "You are a JSON-LD API. Always reply with a JSON-LD object using schema.org context. Do not include any Markdown formatting (like triple backticks) or explanations. Output only raw JSON."
-                            },{
-                            "role": "user", 
-                           "content": prompt}]
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a JSON-LD API. Always reply with a JSON-LD object "
+                            "using schema.org context. Do not include any Markdown formatting "
+                            "(like triple backticks) or explanations. Output only raw JSON."
+                        )
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ]
             )
-            return chat_response  # Succès, on retourne la réponse
+
+            headers = getattr(chat_response, 'response', {}).get('headers', {})
+            tokens_left = int(headers.get("x-ratelimit-remaining-tokens", "9999"))
+            if tokens_left < 300:
+                logger.warning(f"⚠️ Only {tokens_left} tokens left — consider pausing.")
+
+            logger.info(f"[GROQ] ✅ Success on attempt {attempt} — prompt hash {prompt_hash}")
+            return chat_response
 
         except Exception as e:
-            if "429" in str(e) or "Rate limit" in str(e):
-                logger.warning(f"Rate limit exceeded. Retrying in {retry_delay} seconds... (attempt {attempt+1}/{max_retries})")
-                time.sleep(retry_delay)  # Attendre avant de réessayer
-                retry_delay *= 2  # Exponential backoff
-            else:
-                logger.error(f"Error in calling  API: {e}")
-                raise ValueError(f"Error in calling  API: {e}")
+            is_429 = "429" in str(e) or "Too Many Requests" in str(e)
+            response = getattr(e, 'response', None)
+            headers = getattr(response, 'headers', {}) if response else {}
 
-    raise ValueError("Max retries exceeded. GROQ API is still returning 429.")
+            if is_429:
+                wait = None
+
+                if "retry-after" in headers:
+                    try:
+                        wait = int(float(headers["retry-after"]))
+                        logger.warning(f"[GROQ] Retry-After header: waiting {wait}s")
+                    except ValueError:
+                        pass
+
+                elif "x-ratelimit-reset-tokens" in headers:
+                    wait = parse_reset_duration(headers["x-ratelimit-reset-tokens"])
+                    logger.warning(f"[GROQ] Token limit: reset in {wait:.1f}s")
+
+                elif "x-ratelimit-reset-requests" in headers:
+                    wait = parse_reset_duration(headers["x-ratelimit-reset-requests"])
+                    logger.warning(f"[GROQ] Request limit: reset in {wait:.1f}s")
+
+                if wait is None:
+                    wait = retry_delay
+                    retry_delay = min(retry_delay * 2, max_wait)
+                    logger.warning(f"[GROQ] No wait header found. Exponential backoff to {retry_delay}s")
+
+                wait = min(wait, max_wait)
+                logger.info(f"[GROQ] {prompt_hash} Waiting {wait}s before retry (attempt {attempt}/{max_retries})")
+                time.sleep(wait)
+
+            else:
+                logger.error(f"[GROQ] API call failed: {e}")
+                raise RuntimeError(f"Error calling GROQ API: {e}")
+
+    raise RuntimeError("Max retries exceeded. GROQ API still rate-limited.")
+
+
 
 
 def llm_graph_groq(prompt,uri):
@@ -73,16 +131,6 @@ def llm_graph_groq(prompt,uri):
         named_graph = store.get_context(graph_uri)
 
     response = call_groq_api(client, model, prompt)
-    # response = client.chat.completions.create(
-    #     model=model,
-    #     messages=[
-    #         {
-    #             "role": "user",
-    #             "content": prompt
-    #         }
-    #     ],
-    #     temperature=0.0
-    # )
     logger.debug(f"Response: {response.choices[0].message.content}")
     graph_uri=URIRef(uri)
     named_graph = store.get_context(graph_uri)

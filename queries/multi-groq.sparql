@@ -1,0 +1,39 @@
+# slm-run --config config.ini -f queries/multi-groq.sparql --debug
+
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>  
+PREFIX ex: <http://example.org/>
+
+select * {
+    BIND(URI(ex:SLM-FILE("./data/events")) AS ?root)
+    BIND(ex:SLM-READDIR(?root,?root) AS ?event)
+    GRAPH ?event {
+        ?root ex:has_path ?uri .
+        ?uri ex:has_type ?t1.
+        ?uri ex:has_size ?s1 .
+        filter (str(?t1)="file")
+        filter (STRENDS(str(?uri), ".txt"))
+    } 
+    BIND(ex:SLM-READFILE(?uri) AS ?page)
+
+    BIND(CONCAT("""
+    We consider a type Event with the following properties:
+      <http://schema.org/StartDate> : The start date of the event
+      <http://schema.org/name> : The name of the event.
+    Extract from the text below, the date of the event and the name of the event. 
+    Generate only output JSON-LD instance of the Event type with
+    this format replacing the 0 with the date of the event, and 1 with the name of the event:
+     "@context": "https://schema.org/",
+     "@type": "Event",
+     "http://schema.org/StartDate": "0",
+     "http://schema.org/name": "1",
+    <page>""",STR(?page), "</page>") AS ?prompt)
+    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
+    GRAPH ?g {
+        ?uri <http://example.org/has_schema_type> ?root . 
+        ?root a <http://schema.org/Event>. 
+        ?root <http://schema.org/StartDate> ?date.
+        ?root <http://schema.org/name> ?name
+    }    
+}
