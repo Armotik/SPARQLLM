@@ -181,6 +181,20 @@ slm-run --config config.ini -f queries/city-search.sparql --debug
 
 ## Working a online LLMs
 
+If you  use GROQ, your GROQ API key should be available as an environment variable:
+```
+export GROQ_API_KEY=xxxx
+```
+
+Model to use should be configured in config.ini:
+```
+...
+[Requests]
+...
+SLM-GROQ-MODEL=llama3-8b-8192
+```
+
+
 If you  use MISTRAL AI, your MistralAI API key should be available as an environment variable:
 ```
 export MISTRAL_API_KEY='xxxx'
