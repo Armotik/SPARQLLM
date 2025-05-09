@@ -6,14 +6,16 @@ PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX ex: <http://example.org/>
 
 select * {
-    BIND(URI(ex:SLM-FILE("./data/events")) AS ?root)
-    BIND(ex:SLM-READDIR(?root,?root) AS ?event)
-    GRAPH ?event {
-        ?root ex:has_path ?uri .
-        ?uri ex:has_type ?t1.
-        ?uri ex:has_size ?s1 .
-        filter (str(?t1)="file")
-        filter (STRENDS(str(?uri), ".txt"))
+    BIND(URI(ex:SLM-FILE("./data/events")) AS ?dir)
+    BIND(ex:SLM-READDIR(?dir,?dir) AS ?dir_graph)
+    GRAPH ?dir_graph {
+        select * {
+          ?dir ex:has_path ?uri .
+          ?uri ex:has_type ?t1.
+          ?uri ex:has_size ?s1 .
+          filter (str(?t1)="file")
+          filter (STRENDS(str(?uri), ".txt"))
+        } limit 1000
     } 
     BIND(ex:SLM-READFILE(?uri) AS ?page)
 
@@ -29,8 +31,8 @@ select * {
      "http://schema.org/StartDate": "0",
      "http://schema.org/name": "1",
     <page>""",STR(?page), "</page>") AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
-    GRAPH ?g {
+    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?event_graph)
+    GRAPH ?event_graph {
         ?uri <http://example.org/has_schema_type> ?root . 
         ?root a <http://schema.org/Event>. 
         ?root <http://schema.org/StartDate> ?date.

@@ -138,6 +138,8 @@ def llm_graph_groq(prompt,uri):
     try:
         jsonld_data = response.choices[0].message.content
         named_graph.parse(data=jsonld_data, format="json-ld")
+        logger.info(f"reading: {jsonld_data}")
+
 
         #link new triple to bag of mappings
         insert_query_str = f"""
@@ -147,10 +149,10 @@ def llm_graph_groq(prompt,uri):
                 ?subject a ?type .
             }}"""
         named_graph.update(insert_query_str)
-
-        res=named_graph.query("""SELECT ?s ?o WHERE { ?s <http://example.org/has_schema_type> ?o }""")
+#        logger.info(f"Inserted new triples into graph:{len(named_graph)}")
 
     except Exception as e:
+#        logger.error(f"Error in parsing JSON-LD: {jsonld_data}")
         logger.error(f"Error in parsing JSON-LD: {e}")
         named_graph.add((uri, URIRef("http://example.org/has_error"), Literal("Error {e}", datatype=XSD.string)))
 
