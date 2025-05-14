@@ -99,16 +99,19 @@ def configure_udf(config_file):
 
 
 def slm_cmd(query, file, config,load,format="xml",debug=False,keep_store=None,output_result=None):
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.WARNING)
+    logging.getLogger("SPARQLLM").setLevel(logging.INFO)
+
 
     if debug:
         ## seems that urllib3 redefine the logging level...
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
-        logging.basicConfig(level=logging.DEBUG)
+#        logging.basicConfig(level=logging.DEBUG)
 #        logger = logging.getLogger('urllib3')
 #        logger.setLevel(logging.DEBUG)
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
+#        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("SPARQLLM").setLevel(logging.DEBUG)
         logging.debug("debugging activated.")
     else:
         logging.basicConfig(level=logging.INFO)

@@ -29,11 +29,29 @@ select * {
 
     Here is the text to analyze:
     <text>""",STR(?page),"</text>") AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
-     GRAPH ?g {
+    BIND(ex:SLM-LLMGRAPH_GROQM(?prompt,?uri,"llama3-8b-8192") AS ?g8)
+    BIND(ex:SLM-LLMGRAPH_GROQM(?prompt,?uri,"llama3-70b-8192") AS ?g70)
+    BIND(ex:SLM-LLMGRAPH_GROQM(?prompt,?uri,"qwen-TAGADA-32b") AS ?g32)
+    {
+     GRAPH ?g8 {
         ?uri ex:has_schema_type ?root . 
         ?root a schema:Event. 
         ?root schema:startDate ?date.
         ?root schema:name ?name
      }
+    }  UNION {
+      GRAPH ?g70 {
+        ?uri ex:has_schema_type ?root . 
+        ?root a schema:Event. 
+        ?root schema:startDate ?date.
+        ?root schema:name ?name
+      }
+    } UNION {
+      GRAPH ?g32 {
+        ?uri ex:has_schema_type ?root . 
+        ?root a schema:Event. 
+        ?root schema:startDate ?date.
+        ?root schema:name ?name
+      }
+    }   
 }
