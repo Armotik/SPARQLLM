@@ -294,7 +294,8 @@ def llm_graph_groq_model(prompt,uri,model):
             logger.warning(f"Attempt {attempt}: JSON-LD parsing failed — {e}, for uri: {uri}")
             if attempt == max_attempts:
                 logger.error("Maximum retry attempts reached. Aborting.")
-                raise  # Relever l'exception pour la traiter plus haut si besoin
+                named_graph.add((uri, URIRef("http://example.org/has_error"), Literal(error_message, datatype=XSD.string)))
+#                raise  # Relever l'exception pour la traiter plus haut si besoin
             else:
                 messages.append({
                     "role": "assistant",
