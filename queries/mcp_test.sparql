@@ -1,0 +1,11 @@
+# run this SPARQL query: queries/mcp_github.sparql
+# run with slm-run --config config.ini -f queries/mcp_test.sparql --debug
+
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <http://schema.org/>
+
+SELECT ?s ?name ?g WHERE {
+  BIND( slm:SLM-MCP-TOOL("echo","echo.ping", slm:SLM-OBJ("text","hello")) AS ?g )
+  GRAPH ?g { ?s a schema:CreativeWork ; 
+                  schema:name ?name }
+}

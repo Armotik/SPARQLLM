@@ -1,0 +1,21 @@
+# run with:
+# slm-run --config config.ini -f queries/mcp_github.sparql --debug
+
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?repo ?pr ?title ?status ?url WHERE {
+  # Appel tool -> graph blank node contenant le fragment JSON-LD (repo + hasPart)
+  BIND( slm:SLM-MCP-TOOL("github", "github.pullRequests.list",
+        slm:SLM-OBJ("owner","momo54","repo","SPARQLLM","state","open","limit",10)) AS ?g )
+
+  GRAPH ?g {
+    ?repo a schema:Repository ;
+          schema:hasPart ?pr .
+    ?pr a schema:PullRequest ;
+        schema:name ?title ;
+        schema:status ?status ;
+        schema:url ?url .
+  }
+}
+LIMIT 20

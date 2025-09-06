@@ -1,0 +1,21 @@
+# Exemple: prévisualiser une table Postgres via MCP provider
+# Variables d'environnement ou DSN requis (PGUSER, PGPASSWORD, PGDATABASE, etc.)
+# Exécution:
+# ./venv/bin/slm-run --config config.ini -f queries/mcp_postgres_preview.sparql --debug
+
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?table ?obs ?pos ?propName ?propValue WHERE {
+  BIND( slm:SLM-MCP-TOOL(
+          "postgres", "postgres.table.preview",
+          slm:SLM-OBJ("schema","public","table","my_table","limit",5)
+        ) AS ?g )
+  GRAPH ?g {
+    ?table a schema:Table ; schema:hasPart ?obs ; schema:name ?tableName .
+    ?obs a schema:Observation ; schema:position ?pos ; schema:additionalProperty ?pv .
+    ?pv a schema:PropertyValue ; schema:name ?propName ; schema:value ?propValue .
+  }
+}
+ORDER BY ?pos ?propName
+LIMIT 200

@@ -1,0 +1,24 @@
+# Exécuter une requête SQL SELECT via MCP Postgres provider
+# Adapter la requête SQL et les paramètres de connexion (ou DSN via variables d'env)
+# ./venv/bin/slm-run --config config.ini -f queries/mcp_postgres_sql.sparql --debug
+
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?row ?pos ?col ?val WHERE {
+  BIND( slm:SLM-MCP-TOOL(
+         "postgres", "postgres.sql.query",
+         slm:SLM-OBJ(
+           "sql","SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name",
+           "limit",20,
+           "schema","public"
+         )
+       ) AS ?g )
+  GRAPH ?g {
+    ?dataset a schema:Dataset ; schema:hasPart ?row .
+    ?row a schema:Observation ; schema:position ?pos ; schema:additionalProperty ?pv .
+    ?pv a schema:PropertyValue ; schema:name ?col ; schema:value ?val .
+  }
+}
+ORDER BY ?pos ?col
+LIMIT 200
