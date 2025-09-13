@@ -1,0 +1,33 @@
+# slm-run --config config.ini -f queries/mini-cypher.sparql --debug
+PREFIX ex:  <http://ex.org/>
+PREFIX ggf: <http://example.org/>
+PREFIX slm: <http://sparqllm/slm#>
+
+SELECT ?i ?a ?b ?c WHERE {
+  # graphe de départ
+  BIND(ggf:SLM-GRAPH("""
+    @prefix ex: <http://ex.org/> .
+    ex:a ex:linkedTo ex:b .
+    ex:b ex:linkedTo ex:c .
+    ex:c ex:linkedTo ex:d .
+  """) AS ?g)
+
+  # Cypher minimal
+  BIND(ggf:SLM-CYPHER(
+    ?g,
+    """
+      MATCH (a)-[:ex:linkedTo]->(b)-[:ex:linkedTo]->(c)
+      RETURN a,b,c
+    """,
+    "ex=http://ex.org/"
+  ) AS ?res)
+
+  GRAPH ?res {
+    ?row a slm:Row ;
+         slm:pos ?i ;
+         slm:hasBinding [ slm:name "a" ; slm:value ?a ] ;
+         slm:hasBinding [ slm:name "b" ; slm:value ?b ] ;
+         slm:hasBinding [ slm:name "c" ; slm:value ?c ] .
+  }
+}
+ORDER BY ?i

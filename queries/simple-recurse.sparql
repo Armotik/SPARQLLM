@@ -1,30 +1,34 @@
-PREFIX ex: <http://example.org/>
+# Simple recursive query example
+# Run with:
+# slm-run --config config.ini -f queries/simple-recurse.sparql --debug
 
-SELECT ?s ?p ?o WHERE {
-  BIND(ex:SLM-GRAPH("""
+PREFIX ex: <http://example.org/>
+PREFIX ggf: <http://example.org/>
+
+SELECT ?s ?p ?o  WHERE {
+  BIND(ggf:SLM-GRAPH("""
     PREFIX ex: <http://example.org/>
     ex:a ex:linkedTo ex:b .
     ex:b ex:linkedTo ex:c .
     ex:c ex:linkedTo ex:d .
-    ex:x ex:linkedTo ex:y .
-  """, <ex:init>) AS ?ginit)
+    ex:d ex:linkedTo ex:a .
+  """) AS ?ginit)
 
   BIND("""
     PREFIX ex: <http://example.org/>
     CONSTRUCT {
       ?x ?p ?z .
     } WHERE {
-       GRAPH ?gin {
       {
         ?x ?p ?y .
         ?y ?p ?z .
       } UNION { 
         ?x ?p ?z .
-      }}
+      }
     }
   """ AS ?query_str)
 
-  BIND(ex:SLM-RECURSE(?query_str, ?ginit, 10) AS ?out)
+  BIND(ggf:SLM-RECURSE(?query_str, ?ginit, 10) AS ?out)
 
   GRAPH ?out {
     ?s ?p ?o .

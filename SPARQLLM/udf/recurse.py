@@ -32,9 +32,9 @@ def recurse(query_str,ginit,max_depth_lit=Literal(10)):
 
         # query the graph 
         # If we want to use graphs in the construct query -> need a DS. (not a graph)      
-#        result = store.graph(gin_rec).query(query_str)
+        result = store.graph(gin_rec).query(query_str)
 #        result = store.query(query_str) # dangerous -> all graphs
-        result = store.query(query_str,initBindings={'?gin':gin_rec})
+#        result = store.query(query_str,initBindings={'?gin':gin_rec})
         if (result.type!="CONSTRUCT"): 
             logger.debug(f"recursive query is not a construct: {result}")
             raise ValueError("result is not a graph : not a construct query")

@@ -1,21 +1,26 @@
 # run with:
-# slm-run --config config.ini -f queries/mcp_github.sparql --debug
+# slm-run --config config.ini -f queries/mcp_github_with_prov.sparql --debug
 
 PREFIX slm:    <http://example.org/>
 PREFIX schema: <https://schema.org/>
+PREFIX prov:   <http://www.w3.org/ns/prov#>
 
-SELECT ?repo ?pr ?title ?status ?url WHERE {
+SELECT ?g ?repo ?pr ?title ?t ?tool WHERE {
   # Appel tool -> graph blank node contenant le fragment JSON-LD (repo + hasPart)
-  BIND( slm:SLM-MCP-TOOL("github", "github.pullRequests.list",
-        slm:SLM-OBJ("owner","momo54","repo","SPARQLLM","state","open","limit",10)) AS ?g )
+  BIND( slm:SLM-MCP-TOOL("github","github.pullRequests.list",
+        slm:SLM-OBJ("owner","openwrt","repo","openwrt","state","open","limit",10)) AS ?g )
 
   GRAPH ?g {
     ?repo a schema:Repository ;
           schema:hasPart ?pr .
-    ?pr a schema:PullRequest ;
-        schema:name ?title ;
-        schema:status ?status ;
-        schema:url ?url .
+    OPTIONAL { ?pr schema:name ?title }
+
+    # Provenance (le graphe s’auto-annote)
+    ?g prov:generatedAtTime ?t ;
+       prov:wasGeneratedBy ?act .
+    OPTIONAL { ?act prov:used ?tool }
   }
 }
+ORDER BY DESC(?t)
 LIMIT 20
+

@@ -50,6 +50,8 @@ _MCP.connect_stdio("echo", ["python","SPARQLLM/servers/echo_mcp_server.py"])
 
 
 SCHEMA = Namespace("https://schema.org/")
+PROV   = Namespace("http://www.w3.org/ns/prov#")
+from datetime import datetime, timezone
 
 # --- mappers optionnels par tool (JSON -> JSON-LD) ---
 PROFILE_MAPPERS = {}
@@ -120,6 +122,37 @@ def json_to_jsonld(data):
     return jsonld_data
 
 
+def _attach_prov(named_graph: Graph, graph_uri: URIRef, handle: str, tool_name: str, args: dict, source_hint: str = None):
+    """Ajoute des triples PROV-O de provenance dans le named graph cible."""
+    now = datetime.now(timezone.utc).isoformat()
+    act = BNode()
+    agent = URIRef(f"urn:mcp:handle:{handle}")
+    tool  = URIRef(f"urn:mcp:tool:{tool_name}")
+    req   = BNode()
+
+    # Entité = le graphe (on annote directement l'IRI du graphe nommé)
+    named_graph.add((graph_uri, PROV.wasGeneratedBy, act))
+    named_graph.add((graph_uri, PROV.generatedAtTime, Literal(now, datatype=XSD.dateTime)))
+    if source_hint:
+        named_graph.add((graph_uri, PROV.wasDerivedFrom, URIRef(source_hint)))
+
+    # Activité
+    named_graph.add((act, RDF.type, PROV.Activity))
+    named_graph.add((act, PROV.used, tool))
+    named_graph.add((act, PROV.used, req))
+    # Agent (le handle MCP)
+    named_graph.add((agent, RDF.type, PROV.SoftwareAgent))
+    named_graph.add((agent, SCHEMA.name, Literal(handle)))
+    named_graph.add((act, PROV.wasAssociatedWith, agent))
+
+    # Requête (arguments)
+    named_graph.add((req, RDF.type, PROV.Entity))
+    named_graph.add((req, SCHEMA.name, Literal("args")))
+    try:
+        named_graph.add((req, PROV.value, Literal(json.dumps(args, ensure_ascii=False))))
+    except Exception:
+        named_graph.add((req, PROV.value, Literal(str(args))))
+
 def slm_mcp_tool(handle: str,
                  tool_name: str,
                  args_json: str,
@@ -161,6 +194,13 @@ def slm_mcp_tool(handle: str,
         result = _MCP.tools_call(handle, tool_name, args)
         print("MCP result:", result)
 
+        # Petite heuristique de source (optionnelle)
+        source_hint = None
+        if handle == "github":
+            source_hint = "https://api.github.com"
+        elif handle == "postgres":
+            source_hint = os.environ.get("PG_DSN") or "urn:postgres"
+
         # 2) cas JSON-LD natif
         if isinstance(result, dict) and result.get("media_type") == "application/ld+json":
             jsonld_data = result.get("jsonld")
@@ -168,29 +208,27 @@ def slm_mcp_tool(handle: str,
             graph_uri = BNode()
             named_graph = store.get_context(graph_uri)
             named_graph.parse(data=json.dumps(jsonld_data), format="json-ld")
+            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
             print("Named graph has", len(named_graph), "triples")
-            for t in named_graph:
-                print(t)
+            # for t in named_graph: print(t)
             return graph_uri
 
-    # 3) mapper dédié si disponible
+        # 3) mapper dédié si disponible
         mapper = PROFILE_MAPPERS.get(tool_name)
         if mapper and isinstance(result, (dict, list)):
             jsonld = mapper(result)
-            return _jsonld_to_named_graph(jsonld, graph_name_hint)
+            giri = _jsonld_to_named_graph(jsonld, graph_name_hint)
+            _attach_prov(store.get_context(giri), giri, handle, tool_name, args, source_hint)
+            return giri
 
         # 4) heuristique générique JSON -> JSON-LD
         if isinstance(result, (dict, list)):
             print("MCP JSON:", json.dumps(result))
             jsonld_data = json_to_jsonld(result)
-#            print("MCP JSON-LD:", json.dumps(jsonld_data))
-
             graph_uri = BNode()
             named_graph = store.get_context(graph_uri)
             named_graph.parse(data=json.dumps(jsonld_data), format="json-ld")
-            # print("Named graph has", len(named_graph), "triples")
-            # for t in named_graph:
-            #     print(t)
+            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
             return graph_uri
 
         # 5) fallback: pas de RDF possible

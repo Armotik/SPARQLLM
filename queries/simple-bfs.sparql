@@ -1,0 +1,26 @@
+PREFIX ex:  <http://ex.org/>
+PREFIX ggf: <http://example.org/>
+PREFIX slm: <http://sparqllm/slm#>
+
+SELECT ?i ?src ?dst WHERE {
+  BIND(ggf:SLM-GRAPH("""
+    @prefix ex: <http://ex.org/> .
+    ex:a ex:linkedTo ex:b .
+    ex:b ex:linkedTo ex:c .
+    ex:c ex:linkedTo ex:d .
+    ex:d ex:linkedTo ex:a .
+  """) AS ?g)
+
+  BIND(ggf:SLM-BFS(ex:a, ex:d, ex:linkedTo, ?g) AS ?pg)
+
+  GRAPH ?pg {
+    ?path a slm:Path ;
+          slm:length ?len ;
+          slm:hasStep ?step .
+    ?step a slm:PathStep ;
+          slm:pos ?i ;
+          slm:src ?src ;
+          slm:dst ?dst .
+  }
+}
+ORDER BY ?i
