@@ -5,7 +5,7 @@ PREFIX slm:    <http://example.org/>
 PREFIX schema: <https://schema.org/>
 PREFIX prov:   <http://www.w3.org/ns/prov#>
 
-SELECT ?g ?repo ?pr ?title ?t ?tool WHERE {
+SELECT  ?title ?t  WHERE {
   # Appel tool -> graph blank node contenant le fragment JSON-LD (repo + hasPart)
   BIND( slm:SLM-MCP-TOOL("github","github.pullRequests.list",
         slm:SLM-OBJ("owner","openwrt","repo","openwrt","state","open","limit",10)) AS ?g )
@@ -15,10 +15,7 @@ SELECT ?g ?repo ?pr ?title ?t ?tool WHERE {
           schema:hasPart ?pr .
     OPTIONAL { ?pr schema:name ?title }
 
-    # Provenance (le graphe s’auto-annote)
     ?g prov:generatedAtTime ?t ;
-       prov:wasGeneratedBy ?act .
-    OPTIONAL { ?act prov:used ?tool }
   }
 }
 ORDER BY DESC(?t)

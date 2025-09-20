@@ -1,0 +1,26 @@
+# slm-run --config config.ini -f queries/mcp_duckduckgo_search.sparql --debug
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX prov:   <http://www.w3.org/ns/prov#>
+
+SELECT ?pos ?url ?title ?t WHERE {
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "duckduckgo","duckduckgo.search",
+      slm:SLM-OBJ("query","openwrt release","limit",5,"region","wt-wt","safesearch","moderate")
+    ) AS ?g
+  )
+
+  GRAPH ?g {
+    ?g prov:generatedAtTime ?t .
+    ?feed a schema:DataFeed ;
+          schema:dataFeedElement ?item .
+    ?item a schema:DataFeedItem ;
+          schema:position ?pos ;
+          schema:item ?page .
+    ?page a schema:WebPage ;
+          schema:name ?title .
+    BIND(?page AS ?url)
+  }
+}
+ORDER BY ?pos

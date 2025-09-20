@@ -14,6 +14,9 @@ from SPARQLLM.utils.utils import named_graph_exists
 from SPARQLLM.udf.mcp.client import MCPClient
 from SPARQLLM.udf.mcp.providers.github_provider import get_provider
 from SPARQLLM.udf.mcp.providers.postgres_provider import get_pg_provider
+from SPARQLLM.udf.mcp.providers.duckduckgo_provider import get_duckduckgo_provider
+from SPARQLLM.udf.mcp.providers.browser_provider import get_browser_provider
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,9 @@ _MCP.connect_static("github")
 
 _provider = get_provider()
 _pg_provider = get_pg_provider()
+_ddg_provider = get_duckduckgo_provider()
+_browser = get_browser_provider()
+
 
 def _tool_dispatch(tool_args: dict, tool_name: str):
     return _provider.call(tool_name, tool_args)
@@ -45,6 +51,22 @@ _MCP.connect_static("postgres")
 _MCP.register_static_tool("postgres", "postgres.tables.list", lambda a: _pg_provider.call("postgres.tables.list", a))
 _MCP.register_static_tool("postgres", "postgres.table.preview", lambda a: _pg_provider.call("postgres.table.preview", a))
 _MCP.register_static_tool("postgres", "postgres.sql.query", lambda a: _pg_provider.call("postgres.sql.query", a))
+
+_MCP.connect_static("duckduckgo")
+_MCP.register_static_tool(
+    "duckduckgo",
+    "duckduckgo.search",
+    lambda a: _ddg_provider.call("duckduckgo.search", a)
+)
+
+_MCP.connect_static("browser")
+_MCP.register_static_tool(
+    "browser",
+    "browser.snapshot",
+    lambda a: _browser.call("browser.snapshot", a)
+)
+
+
 _MCP.connect_stdio("echo", ["python","SPARQLLM/servers/echo_mcp_server.py"])
 
 

@@ -5,7 +5,7 @@
 PREFIX slm:    <http://example.org/>
 PREFIX schema: <https://schema.org/>
 
-SELECT ?row ?pos ?col ?val WHERE {
+SELECT  ?col ?val WHERE {
   BIND( slm:SLM-MCP-TOOL(
          "postgres", "postgres.sql.query",
          slm:SLM-OBJ(

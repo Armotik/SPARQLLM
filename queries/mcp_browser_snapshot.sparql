@@ -1,0 +1,27 @@
+
+# slm-run --config config.ini -f queries/mcp_browser_snapshot.sparql --debug
+PREFIX slm:    <http://example.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX prov:   <http://www.w3.org/ns/prov#>
+
+SELECT ?title ?snippet ?t WHERE {
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "browser","browser.snapshot",
+      slm:SLM-OBJ(
+        "url","https://openwrt.org/",
+        "wait_ms",800,
+        "text_max",800
+      )
+    ) AS ?g
+  )
+
+  GRAPH ?g {
+    ?g prov:generatedAtTime ?t .
+    ?page a schema:WebPage ;
+          schema:name ?title ;
+          schema:text ?full .
+    BIND(SUBSTR(?full,1,160) AS ?snippet)
+  }
+}
+LIMIT 1

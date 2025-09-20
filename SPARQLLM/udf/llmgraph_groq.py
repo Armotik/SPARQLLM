@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 from groq import Groq
 import os, re, json
 from pyshacl import validate
+from rdflib import BNode
 
 config = ConfigSingleton()
 model = config.config['Requests']['SLM-GROQ-MODEL']
@@ -190,7 +191,9 @@ def extract_json_ld(text):
             logger.warning("cannot find JSON in LLM output")
     return None
 
-def llm_graph_groq(prompt, uri):
+
+
+def llm_graph_groq(prompt, uri=None):
     return llm_graph_groq_model(prompt, uri, model)
 
 def llm_graph_groq_model(prompt,uri,model):
@@ -203,13 +206,16 @@ def llm_graph_groq_model(prompt,uri,model):
     logger.debug(f"uri: {uri}, model: {model}, Prompt: {prompt[:50]} <...>")
 
 
-    graph_name = prompt + ":"+str(uri)+':'+model
-    graph_uri = URIRef("http://groq.org/"+hashlib.sha256(graph_name.encode()).hexdigest())
-    if  named_graph_exists(store, graph_uri):
-        logger.debug(f"Graph {graph_uri} already exists (good)")
-        return graph_uri
+    if uri is None:
+        graph_uri = BNode()
     else:
-        named_graph = store.get_context(graph_uri)
+        graph_name = prompt + ":"+str(uri)+':'+model
+        graph_uri = URIRef("http://groq.org/"+hashlib.sha256(graph_name.encode()).hexdigest())
+        if  named_graph_exists(store, graph_uri):
+            logger.debug(f"Graph {graph_uri} already exists (good)")
+            return graph_uri
+
+    named_graph = store.get_context(graph_uri)
 
     named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_prompt"), Literal(str(prompt))))
     named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_model"), Literal(str(model))))
