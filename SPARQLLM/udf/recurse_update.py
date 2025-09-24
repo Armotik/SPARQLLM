@@ -35,7 +35,8 @@ def recurse_update(query_str,ginit,max_depth_lit=Literal(10)):
         for triple in gin:
             graph_before.add(triple)
 
-        store.update(query_str,initBindings={'?gin':gin_rec})
+        #store.update(query_str,initBindings={'?gin':gin_rec})
+        store.graph(gin_rec).update(query_str)
 
         inserted = set(gin) - set(graph_before)
         deleted = set(graph_before) - set(gin)

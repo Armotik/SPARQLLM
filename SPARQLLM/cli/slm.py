@@ -139,6 +139,7 @@ def slm_cmd(query, file, config,load,format="xml",debug=False,keep_store=None,ou
 
     if load is not None:
         store.parse(load, format=format)
+        logging.debug(f"loading data from {load} (format={format}), store size is now {len(store)} triples")
 
 
     #    explain(query)

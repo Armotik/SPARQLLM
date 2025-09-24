@@ -1,46 +1,39 @@
-# run with slm-run --load ./data/tape.nq --format nquads --config config.ini -f queries/tape_update.sparql --debug
+# run with 
+# slm-run --config config.ini -f queries/tape_update.sparql --debug
 
 PREFIX ex: <http://example.org/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT ?head ?cell ?new_value ?state WHERE {
+  BIND(ex:SLM-FILE("./data/tape.trig") AS ?uri)
+  BIND(ex:SLM-RDF(?uri,"turtle") AS ?tape)
   BIND("""
     PREFIX ex: <http://example.org/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     DELETE {
-      GRAPH ?gin {
         ex:head ex:at ?cell .
         ex:head ex:state ?current_state .
-        ?cell ex:value ?current_value .
-      }
-    }  
+        ?cell ex:value ?current_value .  }  
     INSERT {
-      GRAPH ?gin {
       ex:head ex:at ?next_cell .
       ex:head ex:state ?new_state .
       ?cell ex:value ?new_value . 
-      ?cell ex:tagada ?new_value
-      }
-    }
+      ?cell ex:tagada ?new_value . }
     WHERE {
-      GRAPH ?gin {
       ex:head ex:at ?cell ;
               ex:state ?current_state .
       ?cell ex:value ?current_value ;
             ex:right ?next_cell .
       ?next_cell ex:value ?next_value .
-      }
-      GRAPH <http://example.org/Transition> {
       ?t ex:fromState ?current_state ;
           ex:read ?current_value ;
           ex:toState ?new_state ;
           ex:write ?new_value ;
           ex:move 'R' .
-      }
-    } #where 
+    } 
   """ AS ?query_str)
 
-  BIND(ex:SLM-RECURSE-UPDATE(?query_str, <http://example.org/InitialTapeGraph>,1) AS ?final_graph)
+  BIND(ex:SLM-RECURSE-UPDATE(?query_str, ?tape) AS ?final_graph)
 
   GRAPH ?final_graph { 
     {

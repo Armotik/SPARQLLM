@@ -1,0 +1,32 @@
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:c0 ex:value "1" .
+ex:c0 ex:right ex:c1 .
+ex:c1 ex:value "0" .
+ex:c1 ex:right ex:c2 .
+ex:c2 ex:value "_" .
+
+ex:head ex:at ex:c0 .
+ex:head ex:state "q0" .
+
+ex:transition1 a ex:TransitionRule .
+ex:transition1 ex:fromState "q0" .
+ex:transition1 ex:read "0" .
+ex:transition1 ex:toState "q0" .
+ex:transition1 ex:write "1" .
+ex:transition1 ex:move "R" .
+
+ex:transition2 a ex:TransitionRule .
+ex:transition2 ex:fromState "q0" .
+ex:transition2 ex:read "1" .
+ex:transition2 ex:toState "q0" .
+ex:transition2 ex:write "0" .
+ex:transition2 ex:move "R" .
+
+ex:transition3 a ex:TransitionRule .
+ex:transition3 ex:fromState "q0" .
+ex:transition3 ex:read "_" .
+ex:transition3 ex:toState "q_accept" .
+ex:transition3 ex:write "_" .
+ex:transition3 ex:move "S" .
