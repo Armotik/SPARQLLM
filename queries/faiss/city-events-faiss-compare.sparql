@@ -1,0 +1,72 @@
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX schema: <http://schema.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ex: <http://example.org/>
+
+# Compare generated CreativeWork text per capital with FAISS top hit
+# Output: city, category, ground_truth_text, faiss_chunk, faiss_source, score, lexical_similarity
+
+SELECT ?city ?cityLabel ?catLabel ?doc ?text ?source ?chunk ?score ?lexsim
+WHERE {
+  # 1) Capitals (in English)
+  SERVICE <https://query.wikidata.org/sparql> {
+    ?city wdt:P31 wd:Q5119 ;  # capital
+          rdfs:label ?cityLabel .
+    FILTER(lang(?cityLabel) = "en")
+  }
+
+  # 2) Category list (local, fixed)
+  VALUES ?catLabel {
+    "Theatre" "Cinema" "Museum" "Music" "Festival" "Exhibition" "Dance" "Opera" "Literature" "Photography"
+  }
+
+  # 3) Stable doc IRI matching the generation query
+  BIND(URI(CONCAT("urn:generated:content:", ENCODE_FOR_URI(STR(?cityLabel)))) AS ?doc)
+
+  # 4) Ensure the generated graph exists for this ?doc and read its text
+  {
+    # If the generation was materialized previously into the default graph
+    ?doc a schema:CreativeWork ; schema:text ?text .
+  }
+  UNION
+  {
+    # Or (fallback) synthesize now via LLMGRAPH and read text, but only if not already present
+    FILTER NOT EXISTS { ?doc a schema:CreativeWork ; schema:text ?_t }
+    BIND(
+      CONCAT(
+        "You are a cultural editor. Write a concise English event announcement for the capital '", STR(?cityLabel),
+        "' in the category '", STR(?catLabel), "'.\n",
+        "Return JSON-LD for schema:CreativeWork with schema:text only."
+      ) AS ?prompt)
+
+    SERVICE ex:SLM-LLMGRAPH_GROQ {
+      [] ex:llm_input ?prompt ; ex:llm_graph ?doc .
+    }
+    ?doc a schema:CreativeWork ; schema:text ?text .
+  }
+
+  # 5) Build a FAISS query using city + category
+  BIND(CONCAT("cultural events in ", STR(?cityLabel), " (", STR(?catLabel), ")") AS ?q)
+
+  # 6) Retrieve top-1 from FAISS (use existing function pattern)
+  BIND(ex:SLM-SEARCH-FAISS(?q, ?city, 1) AS ?g)
+  GRAPH ?g {
+    ?s ex:is_aligned_with ?bn .
+    ?bn ex:has_chunk ?chunk .
+    ?bn ex:has_source ?source .
+    ?bn ex:has_score ?score .
+  }
+
+  # 7) Lexical similarity (containment ratio): if one is substring of the other, scale by length ratio, else 0
+  BIND(LCASE(?text) AS ?gt)
+  BIND(LCASE(?chunk) AS ?hit)
+  BIND(
+    IF(CONTAINS(?gt, ?hit), xsd:decimal(STRLEN(?hit)) / xsd:decimal(STRLEN(?gt)),
+      IF(CONTAINS(?hit, ?gt), xsd:decimal(STRLEN(?gt)) / xsd:decimal(STRLEN(?hit)), 0.0)
+    ) AS ?lexsim)
+}
+ORDER BY DESC(?lexsim) DESC(?score)
+LIMIT 100

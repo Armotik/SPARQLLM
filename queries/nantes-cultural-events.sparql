@@ -1,0 +1,114 @@
+## slm-run --config config.ini -f queries/nantes-cultural-events.sparql --debug
+##
+## Pipeline:
+## 1) Récupère les communes/villages proches de Nantes (Wikidata, 20 km)
+## 2) Pour chaque village, lance une recherche DuckDuckGo d'événements culturels
+## 3) Snapshotte chaque page trouvée (texte court)
+## 4) Extrait avec LLM (GROQ) les événements: name + startDate
+##
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX schema: <https://schema.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX slm: <http://example.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?villageLabel ?url ?eventName ?eventDate ?score WHERE {
+  # 1) Villes/villages autour de Nantes
+  SERVICE <https://query.wikidata.org/sparql> {
+    SELECT ?village ?villageLabel WHERE {
+      BIND(wd:Q12191 AS ?nantes) # Nantes
+      ?nantes wdt:P625 ?ncoord.
+      ?village wdt:P31/wdt:P279* wd:Q532.  # instance of human settlement (village) or subclass
+      SERVICE wikibase:around {
+        ?village wdt:P625 ?loc.
+        bd:serviceParam wikibase:center ?ncoord ;
+                        wikibase:radius "20"^^xsd:decimal ;
+                        wikibase:distance ?dist .
+      }
+      FILTER(?village != ?nantes)
+      ?village rdfs:label ?villageLabel .
+      FILTER(LANG(?villageLabel) = "fr")
+    }
+    LIMIT 1
+  }
+
+  # 2) DDG: recherche d'événements culturels
+  BIND(CONCAT("événement culturel ", STR(?villageLabel)) AS ?keywords)
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "duckduckgo","duckduckgo.search",
+      slm:SLM-OBJ(
+        "query", ?keywords,
+        "limit", 1,
+        "region", "fr-fr",
+        "safesearch", "moderate"
+      )
+    ) AS ?gSearch
+  )
+
+  GRAPH ?gSearch {
+    ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
+    ?item a schema:DataFeedItem ; schema:position ?pos ; schema:item ?page .
+    ?page a schema:WebPage ; schema:name ?title .
+    BIND(?page AS ?url)
+    OPTIONAL { ?item schema:position ?pos }
+  }
+
+  # 3) Snapshot (texte court, redaction)
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "browser","browser.snapshot",
+      slm:SLM-OBJ(
+        "url", ?url,
+        "wait_ms", 500,
+        "text_max", 3000,
+        "snippet_only", true,
+        "redact_pi", true
+      )
+    ) AS ?gSnap
+  )
+
+  GRAPH ?gSnap {
+    ?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text .
+  }
+
+  # 4) Extraction LLM (GROQ) en JSON-LD d'un Event { name, startDate }
+  BIND(CONCAT(
+    """
+    From the following French page text, extract the cultural event details if present.
+    Return ONLY a JSON-LD object with the exact shape below (omit extra text):
+    {
+      "@context": "https://schema.org/",
+      "@type": "Event",
+      "name": "...",
+      "startDate": "YYYY-MM-DD"
+    }
+
+    Text (French):
+    <page>
+    """,
+    SUBSTR(?text,1,1800),
+    """
+    </page>
+    """
+  ) AS ?prompt)
+
+  BIND(ex:SLM-LLMGRAPH_GROQ(?prompt, ?url) AS ?gLLM)
+
+  GRAPH ?gLLM {
+    ?root a schema:Event ;
+          schema:name ?eventName ;
+          schema:startDate ?eventDate .
+  }
+
+  # Score optionnel depuis DDG
+  OPTIONAL {
+    GRAPH ?gSearch { ?item schema:position ?score }
+  }
+}
+ORDER BY ?villageLabel ?score

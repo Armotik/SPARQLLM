@@ -1,0 +1,22 @@
+# slm-run --config config.ini -f queries/debug_browser_snapshot.sparql --debug
+PREFIX schema: <https://schema.org/>
+PREFIX slm: <http://example.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?url ?title ?snippet WHERE {
+  VALUES (?url) {
+    ("https://www.nantes.fr/" )
+    ("https://www.reze.fr/")
+  }
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "browser","browser.snapshot",
+      slm:SLM-OBJ("url", ?url, "wait_ms", 500, "text_max", 1200, "snippet_only", true, "redact_pi", true)
+    ) AS ?g
+  )
+  GRAPH ?g {
+    ?page a schema:WebPage ; schema:name ?title ; schema:text ?full .
+    BIND(SUBSTR(?full,1,200) AS ?snippet)
+  }
+}
+LIMIT 5

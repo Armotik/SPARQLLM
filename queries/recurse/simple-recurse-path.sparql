@@ -1,0 +1,47 @@
+# slm-run --config config.ini -f queries/simple-recurse-reach.sparql --debug
+PREFIX ex:  <http://ex.org/>
+PREFIX ggf: <http://example.org/>
+
+SELECT ?i ?src ?dst WHERE {
+  BIND(ggf:SLM-GRAPH("""
+    @prefix ex: <http://ex.org/> .
+
+    ex:a ex:linkedTo ex:b .
+    ex:b ex:linkedTo ex:c .
+    ex:c ex:linkedTo ex:d .
+    ex:d ex:linkedTo ex:a .
+  """) AS ?ginit)
+
+  BIND("""
+    PREFIX ex: <http://ex.org/>
+    CONSTRUCT {
+      ex:a ex:reach ?v .
+      ?v   ex:prev  ?u .
+      ?v   ex:depth ?dv .
+    } WHERE {
+      {
+        ex:a ex:reach ?u .
+        ?u   ex:linkedTo ?v .
+        FILTER NOT EXISTS { ex:a ex:reach ?v }  
+        OPTIONAL { ?u ex:depth ?du }
+        BIND( (IF(BOUND(?du), ?du, 0) + 1) AS ?dv )
+      }
+      UNION {
+        ex:a ex:reach ex:a .
+        ex:a ex:depth 0 .
+      }
+    }
+  """ AS ?rule)
+
+  BIND(ggf:SLM-RECURSE(?rule, ?ginit, 10) AS ?out)
+
+#  GRAPH ?out { ex:a ex:reach ex:d . }
+
+  GRAPH ?out {
+    ?i ?src ?dst
+    # ex:d (ex:prev)* ?dst .
+    # ?dst ex:depth ?i .
+    # OPTIONAL { ?dst ex:prev ?src }  
+  }
+}
+ORDER BY ?i

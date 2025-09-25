@@ -1,0 +1,47 @@
+# Strange query to experiment threshold learning
+# during execution. A form of adaptive query processing.
+
+PREFIX ex: <http://example.org/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?label ?score ?thr ?date ?name ?uri WHERE {
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT * WHERE {
+        ?country wdt:P31 wd:Q6256 ; wdt:P30 wd:Q46 ; wdt:P36 ?capital .
+        ?capital rdfs:label ?label .
+        FILTER(LANG(?label) = "en")
+      } LIMIT 5 }
+  }
+
+  BIND(CONCAT("I want a cultural event related to cinema that is located in ", STR(?label)) AS ?rag)
+
+  # Seuil initial (graph ignore si tu ne l’exploites pas)
+  BIND(ggf:getthreshold(?capital, "cinema") AS ?gThr)
+  GRAPH ?gThr { ?ctx ex:thresholdValue ?thr }
+
+  BIND(ex:SLM-SEARCH-FAISS(?rag, ?capital, 10) AS ?gFaiss)
+  GRAPH ?gFaiss {
+     ?capital ex:is_aligned_with ?bn .
+     ?bn ex:has_score ?score ;
+         ex:has_source ?uri ;
+         ex:has_chunk ?chunk .
+  }
+  FILTER(?score >= ?thr)
+
+  OPTIONAL {
+    BIND(ex:SLM-READFILE(?uri) AS ?page)
+    BIND( ex:SLM-LLMGRAPH_OLLA(
+         CONCAT(\"\"\"\nWe consider a type Event ...\n<page>\"\"\", STR(?page), \"</page>\"\"\") , ?uri) AS ?gLLM)
+    GRAPH ?gLLM {
+       ?uri <http://example.org/has_schema_type> ?root .
+       ?root a <http://schema.org/Event> ;
+             <http://schema.org/StartDate> ?date ;
+             <http://schema.org/name> ?name .
+    }
+    BIND( IF(BOUND(?date) && BOUND(?name), 1, 0) AS ?llmQuality )
+    BIND( ggf:learn_threshold(?capital, ?thr, ?score, ?llmQuality) AS ?gUpd )
+  }
+}
+ORDER BY DESC(?score)

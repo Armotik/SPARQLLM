@@ -1,0 +1,19 @@
+# slm-run --config config.ini -f queries/debug_llm_extract.sparql --debug
+PREFIX schema: <https://schema.org/>
+PREFIX slm: <http://example.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?eventName ?eventDate WHERE {
+  VALUES (?text) {
+    ("Spectacle musical au parc de la mairie. Rendez-vous le 12/10/2025 à 20h. Entrée libre.")
+  }
+  BIND(CONCAT(
+    "Extract ONLY a JSON-LD Event with fields name and startDate (YYYY-MM-DD) from the French text below.\\n",
+    "Return just the JSON-LD, nothing else.\\n",
+    "<page>", ?text, "</page>"
+  ) AS ?prompt)
+  BIND(ex:SLM-LLMGRAPH_GROQ(?prompt, <urn:test:event>) AS ?g)
+  GRAPH ?g {
+    ?root a schema:Event ; schema:name ?eventName ; schema:startDate ?eventDate .
+  }
+}

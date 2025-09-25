@@ -232,7 +232,7 @@ def slm_mcp_tool(handle: str,
             named_graph.parse(data=json.dumps(jsonld_data), format="json-ld")
             _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
             print("Named graph has", len(named_graph), "triples")
-            # for t in named_graph: print(t)
+#            for t in named_graph: print(f"triple:", t)
             return graph_uri
 
         # 3) mapper dédié si disponible

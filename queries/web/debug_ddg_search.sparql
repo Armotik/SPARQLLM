@@ -1,0 +1,22 @@
+# slm-run --config config.ini -f queries/debug_ddg_search.sparql --debug
+PREFIX schema: <https://schema.org/>
+PREFIX slm: <http://example.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?villageLabel ?pos ?url ?title WHERE {
+  VALUES (?villageLabel) { ("Carquefou") ("Rezé") ("Bouaye") }
+  BIND(CONCAT("événement culturel ", STR(?villageLabel)) AS ?keywords)
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "duckduckgo","duckduckgo.search",
+      slm:SLM-OBJ("query", ?keywords, "limit", 3, "region", "fr-fr", "safesearch", "moderate")
+    ) AS ?g
+  )
+  GRAPH ?g {
+    ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
+    ?item a schema:DataFeedItem ; schema:position ?pos ; schema:item ?page .
+    ?page a schema:WebPage ; schema:name ?title .
+    BIND(?page AS ?url)
+  }
+}
+ORDER BY ?villageLabel ?pos

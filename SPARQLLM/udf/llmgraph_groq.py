@@ -182,14 +182,38 @@ def call_groq_api(client, model, messages, max_retries=5, max_wait=120):
     raise RuntimeError("Max retries exceeded. GROQ API still rate-limited.")
 
 
-def extract_json_ld(text):
-    match = re.search(r'\{[\s\S]*?\}', text)
-    if match:
-        try:
-            return json.loads(match.group(0))
-        except json.JSONDecodeError:
-            logger.warning("cannot find JSON in LLM output")
-    return None
+def extract_json_block(text: str) -> str | None:
+    """Heuristique: isole le premier bloc JSON de l'output LLM.
+    Au lieu d'un regex non-gourmand (qui s'arrête au premier '}'),
+    on prend de la première '{' jusqu'à la dernière '}'."""
+    if not text:
+        return None
+    start = text.find('{')
+    end = text.rfind('}')
+    if start == -1 or end == -1 or end <= start:
+        return None
+    return text[start:end + 1]
+
+
+def sanitize_jsonld_context(raw: str) -> str:
+    """Si @context est une IRI (ex: "https://schema.org/"),
+    remplace-la par un objet {"@vocab": "..."} pour éviter toute résolution distante.
+    Retourne la chaîne JSON (minifiée) prête à parser en JSON-LD par rdflib.
+    """
+    try:
+        data = json.loads(raw)
+    except Exception:
+        return raw
+
+    if isinstance(data, dict):
+        ctx = data.get('@context')
+        if isinstance(ctx, str):
+            data['@context'] = {"@vocab": ctx}
+        elif ctx is None:
+            # Par sécurité, on n'impose pas un contexte; mais on pourrait:
+            # data['@context'] = {"@vocab": "https://schema.org/"}
+            pass
+    return json.dumps(data, ensure_ascii=False)
 
 
 
@@ -244,12 +268,10 @@ def llm_graph_groq_model(prompt,uri,model):
 
             response = call_groq_api(client, model, messages)
             content = response.choices[0].message.content
-#            logger.debug(f"Response (attempt {attempt}): {content}")
-            ## grrr, when the prompt is not enough...
-            match = re.search(r'\{[\s\S]*?\}', content)
-            if match:
-                content = match.group(0)
-            else:
+            logger.debug(f"Response (attempt {attempt}): {content}")
+            # Extraire le bloc JSON complet
+            json_block = extract_json_block(content)
+            if not json_block:
                 messages.append({
                     "role": "assistant",
                     "content": f"{content}"
@@ -260,10 +282,10 @@ def llm_graph_groq_model(prompt,uri,model):
                 })
                 continue
 
-            # Essaye de parser le JSON-LD
-            # named_graph.remove((None, None, None))
-            named_graph.parse(data=content, format="json-ld")
-            logger.debug(f"Successfully parsed JSON-LD: {content}")
+            # Normaliser le contexte si nécessaire, puis parser
+            content_norm = sanitize_jsonld_context(json_block)
+            named_graph.parse(data=content_norm, format="json-ld")
+            logger.debug(f"Successfully parsed JSON-LD: {content_norm}")
 
 # SHACL check
 #             conforms, report_text, _ = validate_jsonld_with_shacl(content, "./data/event-shape.ttl")

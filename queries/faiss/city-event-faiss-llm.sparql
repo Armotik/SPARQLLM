@@ -1,0 +1,52 @@
+## Alias of city-events-faiss-llm.sparql
+# This file mirrors the content to match the expected naming.
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?label ?chunk ?score ?date ?name ?gf ?gl ?uri WHERE {
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT * WHERE {
+        ?country wdt:P31 wd:Q6256;  # sovereign state
+                 wdt:P30 wd:Q46;   # in Europe (Q46)
+                 wdt:P36 ?capital. # has capital
+        ?capital rdfs:label ?label.
+        FILTER(LANG(?label) = "en")
+      } LIMIT 5 }
+  }
+
+  BIND(CONCAT("I want a cultural event related to cinema that is located in ", STR(?label)) AS ?rag)
+  BIND(ex:SLM-SEARCH-FAISS(?rag, ?capital, 3) AS ?gf)
+
+  GRAPH ?gf {
+    ?capital ex:is_aligned_with ?bn .
+    ?bn ex:has_chunk ?chunk .
+    ?bn ex:has_source ?uri .
+    ?bn ex:has_score ?score .
+  }
+
+  BIND(ex:SLM-READFILE(?uri) AS ?page)
+  BIND(CONCAT("""
+We consider a type Event with the following properties:
+  <http://schema.org/StartDate> : The start date of the event
+  <http://schema.org/name> : The name of the event.
+Extract from the text below, the date of the event and the name of the event.
+Generate only output JSON-LD instance of the Event type with
+this format replacing the 0 with the date of the event, and 1 with the name of the event:
+ "@context": "https://schema.org/",
+ "@type": "Event",
+ "http://schema.org/StartDate": "0",
+ "http://schema.org/name": "1",
+<page>""", STR(?page), "</page>") AS ?prompt)
+
+  BIND(ex:SLM-LLMGRAPH_OLLA(?prompt, ?uri) AS ?gl)
+  GRAPH ?gl {
+    ?uri <http://example.org/has_schema_type> ?root .
+    ?root a <http://schema.org/Event> .
+    ?root <http://schema.org/StartDate> ?date .
+    ?root <http://schema.org/name> ?name .
+  }
+}
+ORDER BY DESC(?score)
+LIMIT 10
