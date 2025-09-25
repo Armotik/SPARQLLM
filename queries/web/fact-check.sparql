@@ -15,7 +15,7 @@ SELECT ?countryLabel ?capitalLabel ?url ?title ?decision ?ratingValue ?evidence 
       ?capital rdfs:label ?capitalLabel .
       FILTER(LANG(?countryLabel) = "en")
       FILTER(LANG(?capitalLabel) = "en")
-    } LIMIT 1
+    } LIMIT 20
   }
 
   # 2) Recherche web (Wikipédia) via DuckDuckGo
@@ -28,7 +28,7 @@ SELECT ?countryLabel ?capitalLabel ?url ?title ?decision ?ratingValue ?evidence 
         "q", ?q,
         "region","us-en",
         "safe","moderate",
-        "limit", 3
+        "limit", 1
       )
     ) AS ?gSearch
   )
@@ -55,9 +55,10 @@ SELECT ?countryLabel ?capitalLabel ?url ?title ?decision ?ratingValue ?evidence 
       "browser","browser.snapshot",
       ex:SLM-OBJ(
         "url", ?url,
-        "wait_ms", 500,
-        "text_max", 2500,
-        "snippet_only", true,
+        "wait_ms", 800,
+        "wait_until", "networkidle",
+        "text_max", 200000,
+        "snippet_only", false,
         "redact_pi", true,
         "min_delay_ms", 1200
       )
