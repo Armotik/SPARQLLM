@@ -1,0 +1,16 @@
+# run with:
+# slm-run --config config.ini -f queries/mcp/github-issues-udf.sparql --debug
+
+PREFIX ex: <http://example.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?issue ?title ?state ?number WHERE {
+  BIND(ex:SLM-GITHUB("openwrt", "openwrt", "issues", "", 5) AS ?gGithub)
+  GRAPH ?gGithub {
+    ?issue a schema:Issue ;
+           rdfs:label ?title ;
+           schema:status ?state ;
+           schema:identifier ?number .
+  }
+} ORDER BY DESC(?number) LIMIT 5

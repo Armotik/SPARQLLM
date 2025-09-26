@@ -1,10 +1,10 @@
-## slm-run --config config.ini -f queries/web/nantes-cultural-events.sparql --debug
+## slm-run --config config.ini -f queries/web/cultural-events.sparql --debug
 ##
 ## Pipeline:
-## 1) Récupère les capitales européennes (Wikidata)
-## 2) Pour chaque capitale, lance une recherche DuckDuckGo d'événements culturels
-## 3) Snapshotte chaque page trouvée (texte court)
-## 4) Extrait avec LLM (GROQ) les événements: name + startDate
+## 1) Fetch European capitals (Wikidata)
+## 2) For each capital, run a DuckDuckGo search for cultural events
+## 3) Snapshot each found page (short redacted text)
+## 4) Extract with LLM (GROQ) Event { name, startDate }
 ##
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -18,27 +18,27 @@ PREFIX slm: <http://example.org/>
 PREFIX ex: <http://example.org/>
 
 SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
-  # 1) Capitales européennes
+  # 1) European capitals
   SERVICE <https://query.wikidata.org/sparql> {
     SELECT ?capital ?capitalLabel WHERE {
       ?country wdt:P31 wd:Q6256 ;        # instance of country
                wdt:P30 wd:Q46 ;          # continent Europe
                wdt:P36 ?capital .        # has capital
       ?capital rdfs:label ?capitalLabel .
-      FILTER(LANG(?capitalLabel) = "fr")
+      FILTER(LANG(?capitalLabel) = "en")
     }
     LIMIT 5
   }
 
-  # 2) DDG: recherche d'événements culturels
-  BIND(CONCAT("événement culturel ", STR(?capitalLabel)) AS ?keywords)
+  # 2) DuckDuckGo: search cultural events
+  BIND(CONCAT("cultural event ", STR(?capitalLabel)) AS ?keywords)
   BIND(
     ex:SLM-MCP-TOOL(
       "duckduckgo","duckduckgo.search",
       ex:SLM-OBJ(
         "query", ?keywords,
         "limit", 3,
-        "region", "fr-fr",
+        "region", "us-en",
         "safesearch", "moderate"
       )
     ) AS ?gSearch
@@ -52,7 +52,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
     OPTIONAL { ?item schema:position ?pos }
   }
 
-  # 3) Snapshot (texte court, redaction)
+  # 3) Snapshot (short text, redaction)
   BIND(
     ex:SLM-MCP-TOOL(
       "browser","browser.snapshot",
@@ -70,11 +70,11 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
     ?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text .
   }
 
-  # 4) Extraction LLM (GROQ) en JSON-LD d'un Event { name, startDate }
+  # 4) LLM extraction (GROQ) to JSON-LD Event { name, startDate }
   BIND(CONCAT(
     """
-    From the following French page text, extract the cultural event details if present.
-    Return ONLY a JSON-LD object with the exact shape below (omit extra text):
+    From the following English page text, extract cultural event details if present.
+    Return ONLY a JSON-LD object with the exact shape below (omit extra text, no prose):
     {
       "@context": "https://schema.org/",
       "@type": "Event",
@@ -82,7 +82,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
       "startDate": "YYYY-MM-DD"
     }
 
-    Text (French):
+    Text (English):
     <page>
     """,
     SUBSTR(?text,1,1800),
@@ -99,7 +99,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
           schema:startDate ?eventDate .
   }
 
-  # Score optionnel depuis DDG
+  # Optional score (position) from DuckDuckGo
   OPTIONAL {
     GRAPH ?gSearch { ?item schema:position ?score }
   }
