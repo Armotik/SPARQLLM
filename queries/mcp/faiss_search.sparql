@@ -8,7 +8,7 @@ PREFIX prov: <http://www.w3.org/ns/prov#>
 
 PREFIX schema: <http://schema.org/>
 
-SELECT ?match ?textVal ?p2 ?o2 WHERE {
+SELECT ?match ?textVal ?addressVal ?startDateVal ?venueVal ?capacityVal WHERE {
   # Provide the original TTL file; the provider will create ./data/events_faiss.index/.meta.json if needed
   BIND(
     ex:SLM-MCP-TOOL(
@@ -25,7 +25,11 @@ SELECT ?match ?textVal ?p2 ?o2 WHERE {
 
   GRAPH ?g {
     ?match schema:text ?textVal .
-    OPTIONAL {?match ?p2 ?o2}
+    ?match schema:address ?addressVal .
+    ?match schema:startDate ?startDateVal .
+    ?match schema:venue ?venueVal .
+    ?match schema:capacity ?capacityVal .
+#    OPTIONAL {?match ?p2 ?o2}
   }
 }
 LIMIT 500
