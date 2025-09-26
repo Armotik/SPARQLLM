@@ -1,0 +1,31 @@
+## Example: search a FAISS index with the FAISS MCP provider
+## If the index does not exist, pass the TTL file and the provider will build & persist it first.
+## Run with:
+## slm-run --config config.ini -f queries/mcp/faiss_search.sparql --debug
+
+PREFIX ex:  <http://example.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+PREFIX schema: <http://schema.org/>
+
+SELECT ?match ?textVal ?p2 ?o2 WHERE {
+  # Provide the original TTL file; the provider will create ./data/events_faiss.index/.meta.json if needed
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.search_index",
+      ex:SLM-OBJ(
+        "file", "./events.nt.ttl",
+        "index_path", "./data/events_faiss",
+        "query", "music in Berlin",
+        "k", 3
+      )
+    ) AS ?g
+  )
+
+  GRAPH ?g {
+    ?match schema:text ?textVal .
+    OPTIONAL {?match ?p2 ?o2}
+  }
+}
+LIMIT 500

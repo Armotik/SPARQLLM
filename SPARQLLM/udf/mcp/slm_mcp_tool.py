@@ -16,6 +16,7 @@ from SPARQLLM.udf.mcp.providers.github_provider import get_provider
 from SPARQLLM.udf.mcp.providers.postgres_provider import get_pg_provider
 from SPARQLLM.udf.mcp.providers.duckduckgo_provider import get_duckduckgo_provider
 from SPARQLLM.udf.mcp.providers.browser_provider import get_browser_provider
+from SPARQLLM.udf.mcp.providers.faiss_provider import get_provider as get_faiss_provider
 
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ _provider = get_provider()
 _pg_provider = get_pg_provider()
 _ddg_provider = get_duckduckgo_provider()
 _browser = get_browser_provider()
+_faiss_provider = get_faiss_provider()
 
 
 def _tool_dispatch(tool_args: dict, tool_name: str):
@@ -65,6 +67,11 @@ _MCP.register_static_tool(
     "browser.snapshot",
     lambda a: _browser.call("browser.snapshot", a)
 )
+
+# FAISS provider tools
+_MCP.connect_static("faiss")
+_MCP.register_static_tool("faiss", "faiss.index_file", lambda a: _faiss_provider.call("faiss.index_file", a))
+_MCP.register_static_tool("faiss", "faiss.search_index", lambda a: _faiss_provider.call("faiss.search_index", a))
 
 
 _MCP.connect_stdio("echo", ["python","SPARQLLM/servers/echo_mcp_server.py"])
@@ -211,6 +218,21 @@ def slm_mcp_tool(handle: str,
                 logger.debug(f"[MCP] Handles actifs: {list(handles.keys())}")
             except Exception as re_err:
                 logger.warning(f"[MCP] Echec re-registration github tools: {re_err}")
+        # lazy registration for faiss as well
+        if handle == "faiss":
+            try:
+                handles = getattr(_MCP, "_handles", {})
+                if "faiss" not in handles:
+                    logger.debug("[MCP] handle 'faiss' absent -> reconnect_static")
+                    _MCP.connect_static("faiss")
+                if not _MCP.has_tool("faiss", "faiss.index_file"):
+                    logger.debug("[MCP] (re)register faiss.index_file")
+                    _MCP.register_static_tool("faiss", "faiss.index_file", lambda a: _faiss_provider.call("faiss.index_file", a))
+                if not _MCP.has_tool("faiss", "faiss.search_index"):
+                    logger.debug("[MCP] (re)register faiss.search_index")
+                    _MCP.register_static_tool("faiss", "faiss.search_index", lambda a: _faiss_provider.call("faiss.search_index", a))
+            except Exception as re_err:
+                logger.warning(f"[MCP] Faiss re-registration failed: {re_err}")
 
         # 1) appel MCP
         result = _MCP.tools_call(handle, tool_name, args)
@@ -227,12 +249,17 @@ def slm_mcp_tool(handle: str,
         if isinstance(result, dict) and result.get("media_type") == "application/ld+json":
             jsonld_data = result.get("jsonld")
             print("MCP JSON-LD:", json.dumps(jsonld_data))
+
+            # The provider is expected to return RDF-ready JSON-LD (possibly
+            # with an @graph). Parse it directly into a named graph.
             graph_uri = BNode()
             named_graph = store.get_context(graph_uri)
-            named_graph.parse(data=json.dumps(jsonld_data), format="json-ld")
+            # jsonld_data may be a dict (convert to string) or a JSON-LD string
+            payload = json.dumps(jsonld_data) if isinstance(jsonld_data, dict) else jsonld_data
+            named_graph.parse(data=payload, format="json-ld")
             _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
             print("Named graph has", len(named_graph), "triples")
-#            for t in named_graph: print(f"triple:", t)
+            for t in named_graph: print(f"triple:", t)
             return graph_uri
 
         # 3) mapper dédié si disponible

@@ -1,0 +1,27 @@
+## Example: index a TTL file with the FAISS MCP provider
+## Run with:
+## slm-run --config config.ini -f queries/mcp/faiss_index.sparql --debug
+
+PREFIX slm: <http://example.org/>
+PREFIX ex:  <http://example.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+
+SELECT ?g ?s ?p ?o WHERE {
+  # Call the faiss provider to index and persist the TTL file
+  BIND(
+    slm:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.index_file",
+      slm:SLM-OBJ(
+        "file", "./events.nt.ttl",
+        "index_path", "./data/events_faiss",
+        "persist", true
+      )
+    )
+    AS ?g
+  )
+
+  # Inspect the returned named graph for diagnostics (JSON-LD -> RDF)
+  GRAPH ?g { ?s ?p ?o }
+}
+LIMIT 200
