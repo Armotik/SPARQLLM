@@ -1,35 +1,90 @@
+## slm-run --config config.ini -f queries/web/university_search_llm.sparql --debug
 ##
-## Requires OLAMA to be runing.
+## Pipeline (inspiré de fact-check.sparql) :
+## 1) DBpedia : universités françaises (University, country France) + label fr
+## 2) Recherche DuckDuckGo : site officiel (limit configurable)
+## 3) Snapshot de la page (texte complet ou tronqué)
+## 4) Extraction LLM -> JSON-LD (CollegeOrUniversity) { name, url, numberOfStudents?, sameAs? }
+## 5) Projection des champs principaux
 ##
-
-PREFIX dbo: <http://dbpedia.org/ontology/>
-PREFIX dbr: <http://dbpedia.org/resource/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX dbr:  <http://dbpedia.org/resource/>
+PREFIX schema: <https://schema.org/>
 PREFIX ex: <http://example.org/>
 
-SELECT ?university ?uri ?p1 ?o1
+SELECT ?university ?universityLabel ?searchUrl ?title ?name ?students ?sameAs
 WHERE {
-    SERVICE <http://dbpedia.org/sparql> {
-        SELECT *  WHERE {
-            ?university a dbo:University ;
-                dbo:country dbr:France ;
-                dbo:numberOfStudents ?nbetu .
-            OPTIONAL { ?university rdfs:label ?universityLabel . 
-            FILTER (lang(?universityLabel) = "fr") }
-        } LIMIT 1
+    # 1) DBpedia: universités françaises
+    SERVICE <https://dbpedia.org/sparql> {
+        SELECT ?university ?universityLabel WHERE {
+            ?university a dbo:University ; dbo:country dbr:France .
+            ?university rdfs:label ?universityLabel .
+            FILTER(LANG(?universityLabel) = "fr")
+        } LIMIT 5
     }
-    ## require Google Search API
-    BIND(ex:SLM-SEARCH(CONCAT("Official web page of the french university : ",
-                            STR(?universityLabel)),?university) AS ?segraph).
-    GRAPH ?segraph {?university <http://example.org/has_uri> ?uri}    
 
-    BIND(ex:SLM-BS4(?uri) AS ?page)   
-    BIND(CONCAT("""generate in JSON-LD a schema.org representation 
-            for a type university of the following page: <page>""", 
-            ?page,
-            "</page> Output only JSON-LD, no extra text",STR(?page)) AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH(?prompt,?uri) AS ?g)
-    GRAPH ?g {
-        ?uri <http://example.org/has_schema_type> ?root . 
-        ?root ?p1 ?o1
-    }    
+    # 2) Recherche web (site officiel / infos) via DuckDuckGo MCP
+    BIND(CONCAT("\"", STR(?universityLabel), "\" université site:.fr") AS ?q)
+
+    BIND(
+        ex:SLM-MCP-TOOL(
+            "duckduckgo","duckduckgo.search",
+            ex:SLM-OBJ(
+                "q", ?q,
+                "region","fr-fr",
+                "safe","moderate",
+                "limit", 2
+            )
+        ) AS ?gSearch
+    )
+
+    GRAPH ?gSearch {
+        ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
+        ?item a schema:DataFeedItem ; schema:item ?page .
+        ?page a schema:WebPage .
+        OPTIONAL { ?page schema:name ?title }
+        BIND(STR(?page) AS ?urlIri)
+        OPTIONAL { ?page schema:url ?urlProp }
+        BIND(COALESCE(STR(?urlProp), ?urlIri) AS ?searchUrl)
+    }
+
+    # 3) Snapshot (texte plein, protégé)
+    BIND(
+        ex:SLM-MCP-TOOL(
+            "browser","browser.snapshot",
+            ex:SLM-OBJ(
+                "url", ?searchUrl,
+                "wait_ms", 700,
+                "wait_until", "networkidle",
+                "text_max", 120000,
+                "snippet_only", false,
+                "redact_pi", true,
+                "min_delay_ms", 900
+            )
+        ) AS ?gSnap
+    )
+
+    GRAPH ?gSnap { ?any schema:text ?text . }
+
+    # 4) Prompt d'extraction JSON-LD (CollegeOrUniversity)
+    BIND(
+        CONCAT(
+            """You extract structured data about a French university from the page text.\nReturn one JSON-LD object only (no prose, no markdown).\nTarget shape:\n{"@context":{"@vocab":"https://schema.org/"},"@type":"CollegeOrUniversity","name":"...","url":"<page url>","numberOfStudents":12345,"sameAs":["..."]}\nRules:\n- numberOfStudents must be an integer if present (omit if unsure)\n- sameAs is an array of URLs (Wikipedia, Wikidata, official social) if found, else omit\n- Do not hallucinate. If a field not present, omit it.\nPage text:\n<page>""",
+            SUBSTR(?text,1,6000),
+            """\n</page>"""
+        ) AS ?prompt
+    )
+
+    # 5) Appel LLM GROQ -> graphe JSON-LD
+    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt, ?searchUrl) AS ?gLLM)
+
+    GRAPH ?gLLM {
+        ?root a schema:CollegeOrUniversity ;
+                    schema:name ?name .
+        OPTIONAL { ?root schema:url ?rootUrl }
+        OPTIONAL { ?root schema:numberOfStudents ?students }
+        OPTIONAL { ?root schema:sameAs ?sameAs }
+    }
 }
+ORDER BY ?universityLabel ?searchUrl

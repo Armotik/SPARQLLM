@@ -38,10 +38,9 @@ SELECT ?countryLabel ?capitalLabel ?url ?title ?decision ?ratingValue ?evidence 
     ?feed a schema:DataFeed ;
       schema:dataFeedElement ?item .
     ?item a schema:DataFeedItem ;
-      schema:position ?pos ;
       schema:item ?page .
-    ?page a schema:WebPage ;
-      schema:name ?title .
+    ?page a schema:WebPage .
+    OPTIONAL { ?page schema:name ?title }
     # L'URL est l'@id de la WebPage (IRI) ; on prévoit un repli si schema:url est fourni
     BIND(STR(?page) AS ?urlIri)
     OPTIONAL { ?page schema:url ?urlProp }
@@ -65,10 +64,9 @@ SELECT ?countryLabel ?capitalLabel ?url ?title ?decision ?ratingValue ?evidence 
     ) AS ?gSnap
   )
 
-    GRAPH ?gSnap {
-        ?any schema:text ?text .
-        BIND(ex:PRINT(CONCAT("page text:", ?text)) AS ?ignore)
-    }
+  GRAPH ?gSnap {
+    ?any schema:text ?text .
+  }
 #      FILTER(BOUND(?text) && STRLEN(STR(?text)) > 50)
 
   # 4) Vérification par LLM -> ClaimReview JSON-LD

@@ -1,0 +1,120 @@
+# slm-run --config config.ini -f queries/web/fact-check-judge.sparql --debug
+
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo:  <http://dbpedia.org/ontology/>
+PREFIX schema: <https://schema.org/>
+PREFIX slm: <http://slm.local/>
+PREFIX ex: <http://example.org/>
+
+# LLM-as-Judge: on appelle plusieurs modèles GROQ via ex:SLM-LLMGRAPH_GROQM(prompt, uri, model)
+# puis on agrège les votes (ratingValue 0/1) pour une décision majoritaire.
+
+SELECT ?countryLabel ?capitalLabel 
+     ?url
+       (COUNT(?rv) AS ?nModels)
+       (SUM(?rv) AS ?sumYes)
+       (IF(2*SUM(?rv) > COUNT(?rv), "confirmed",
+           IF(2*SUM(?rv) < COUNT(?rv), "refuted", "tie")) AS ?majorityDecision)
+       (IF(2*SUM(?rv) > COUNT(?rv), "1",
+           IF(2*SUM(?rv) < COUNT(?rv), "0", "0.5")) AS ?majorityValue)
+WHERE {
+  # 1) DBpedia: (pays, capitale)
+  SERVICE <https://dbpedia.org/sparql> {
+    SELECT ?country ?capital ?countryLabel ?capitalLabel WHERE {
+      ?country a dbo:Country ; dbo:capital ?capital .
+      ?country rdfs:label ?countryLabel .
+      ?capital rdfs:label ?capitalLabel .
+      FILTER(LANG(?countryLabel) = "en")
+      FILTER(LANG(?capitalLabel) = "en")
+    } LIMIT 5
+  }
+
+  # 2) Recherche web (Wikipédia) via DuckDuckGo
+  BIND(CONCAT("\"", STR(?capitalLabel), "\" capital of ", STR(?countryLabel), " site:wikipedia.org") AS ?q)
+
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "duckduckgo","duckduckgo.search",
+      ex:SLM-OBJ(
+        "q", ?q,
+        "region","us-en",
+        "safe","moderate",
+        "limit", 3
+      )
+    ) AS ?gSearch
+  )
+
+  GRAPH ?gSearch {
+    ?feed a schema:DataFeed ;
+      schema:dataFeedElement ?item .
+    ?item a schema:DataFeedItem ;
+      schema:item ?page .
+    ?page a schema:WebPage .
+    OPTIONAL { ?page schema:name ?title }
+  BIND(STR(?page) AS ?urlIri)
+  OPTIONAL { ?page schema:url ?urlProp }
+  BIND(COALESCE(STR(?urlProp), ?urlIri) AS ?urlFull)
+  }
+
+  # 3) Snapshot de la page — texte complet
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "browser","browser.snapshot",
+      ex:SLM-OBJ(
+  "url", ?urlFull,
+        "wait_ms", 800,
+        "wait_until", "networkidle",
+        "text_max", 200000,
+        "snippet_only", false,
+        "redact_pi", true,
+        "min_delay_ms", 1200
+      )
+    ) AS ?gSnap
+  )
+
+  GRAPH ?gSnap { ?any schema:text ?text . }
+
+  # URL d'affichage: suffixe de 49 chars, précédé d'une ellipse si > 50
+  BIND(
+    IF(STRLEN(STR(?urlFull)) > 30,
+       CONCAT("…", SUBSTR(STR(?urlFull), STRLEN(STR(?urlFull)) - 28)),
+       STR(?urlFull))
+    AS ?url)
+
+  # 4) Prompt commun
+  BIND(
+    CONCAT(
+      """You are a strict fact-checker. Verify the claim using the provided page text.
+Claim: '""", STR(?capitalLabel), " is the capital of ", STR(?countryLabel), """'.
+Instructions:
+{"@context":{"@vocab":"https://schema.org/"},"@type":"ClaimReview","claimReviewed":"<claim>","reviewRating":{"@type":"Rating","ratingValue":"0 or 1","bestRating":"1","worstRating":"0","alternateName":"confirmed or refuted"},"description":"short quoted evidence from the page"}
+Page text:
+<page>
+""",
+      ?text,
+      """
+</page>
+"""
+    ) AS ?prompt
+  )
+
+  # 5) Appels multi-modèles GROQ (éditez la liste de modèles ci-dessous)
+  VALUES ?groqModel {
+    "llama-3.3-70b-versatile"
+    "llama-3.1-8b-instant"
+    "openai/gpt-oss-20b"       # troisième voix (production); éviter guard/whisper
+  }
+
+  BIND(ex:SLM-LLMGRAPH_GROQM(?prompt, ?urlFull, ?groqModel) AS ?gLLM)
+
+  GRAPH ?gLLM {
+    ?cr a schema:ClaimReview ;
+        schema:reviewRating ?rating .
+    ?rating a schema:Rating ;
+            schema:ratingValue ?rvStr .
+  }
+
+  BIND(xsd:integer(?rvStr) AS ?rv)
+}
+GROUP BY ?countryLabel ?capitalLabel ?urlFull ?title
+ORDER BY ?countryLabel ?capitalLabel

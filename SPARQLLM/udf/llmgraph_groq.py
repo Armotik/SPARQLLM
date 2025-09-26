@@ -49,16 +49,21 @@ def supports_response_format(client, model: str) -> bool:
         )
         return True
     except Exception as e:
-        logger.debug(f"[GROK] Model '{model}' does not support response_format=json_object: {e}")
+        logger.debug(f"[GROQ] Model '{model}' does not support response_format=json_object: {e}")
         return False
 
-support_json=False
-if supports_response_format(client, model):
-    logger.debug(f"[GROQ] Model '{model}' supports response_format=json_object.")
-    support_json=True
-else:
-    logger.debug(f"[GROQ] Model '{model}' does NOT support response_format=json_object.")
-    support_json=False
+# Per-model cache for response_format support
+support_json_by_model = {}
+
+# Prime cache for default model
+try:
+    support_json_by_model[model] = supports_response_format(client, model)
+    if support_json_by_model[model]:
+        logger.debug(f"[GROQ] Model '{model}' supports response_format=json_object.")
+    else:
+        logger.debug(f"[GROQ] Model '{model}' does NOT support response_format=json_object.")
+except Exception as _e:
+    logger.debug(f"[GROQ] Could not probe default model '{model}': {_e}")
 
 
 def parse_reset_duration(duration_str):
@@ -125,10 +130,20 @@ def call_groq_api(client, model, messages, max_retries=5, max_wait=120):
         "messages": messages,
         "temperature": 0
     }
-    if support_json:
-        params["stream"]=False
+    # Decide per-model JSON response support
+    supported = support_json_by_model.get(model)
+    if supported is None:
+        try:
+            supported = supports_response_format(client, model)
+            support_json_by_model[model] = supported
+        except Exception as _e:
+            logger.debug(f"[GROQ] Probe failed for model '{model}': {_e}")
+            supported = False
+            support_json_by_model[model] = False
+    if supported:
+        params["stream"] = False
         params["response_format"] = {"type": "json_object"}
-        params["stop"]=None
+        params["stop"] = None
 
 
     for attempt in range(1, max_retries + 1):

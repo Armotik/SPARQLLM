@@ -1,8 +1,8 @@
-## slm-run --config config.ini -f queries/nantes-cultural-events.sparql --debug
+## slm-run --config config.ini -f queries/web/nantes-cultural-events.sparql --debug
 ##
 ## Pipeline:
-## 1) Récupère les communes/villages proches de Nantes (Wikidata, 20 km)
-## 2) Pour chaque village, lance une recherche DuckDuckGo d'événements culturels
+## 1) Récupère les capitales européennes (Wikidata)
+## 2) Pour chaque capitale, lance une recherche DuckDuckGo d'événements culturels
 ## 3) Snapshotte chaque page trouvée (texte court)
 ## 4) Extrait avec LLM (GROQ) les événements: name + startDate
 ##
@@ -17,34 +17,27 @@ PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX slm: <http://example.org/>
 PREFIX ex: <http://example.org/>
 
-SELECT ?villageLabel ?url ?eventName ?eventDate ?score WHERE {
-  # 1) Villes/villages autour de Nantes
+SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
+  # 1) Capitales européennes
   SERVICE <https://query.wikidata.org/sparql> {
-    SELECT ?village ?villageLabel WHERE {
-      BIND(wd:Q12191 AS ?nantes) # Nantes
-      ?nantes wdt:P625 ?ncoord.
-      ?village wdt:P31/wdt:P279* wd:Q532.  # instance of human settlement (village) or subclass
-      SERVICE wikibase:around {
-        ?village wdt:P625 ?loc.
-        bd:serviceParam wikibase:center ?ncoord ;
-                        wikibase:radius "20"^^xsd:decimal ;
-                        wikibase:distance ?dist .
-      }
-      FILTER(?village != ?nantes)
-      ?village rdfs:label ?villageLabel .
-      FILTER(LANG(?villageLabel) = "fr")
+    SELECT ?capital ?capitalLabel WHERE {
+      ?country wdt:P31 wd:Q6256 ;        # instance of country
+               wdt:P30 wd:Q46 ;          # continent Europe
+               wdt:P36 ?capital .        # has capital
+      ?capital rdfs:label ?capitalLabel .
+      FILTER(LANG(?capitalLabel) = "fr")
     }
-    LIMIT 1
+    LIMIT 5
   }
 
   # 2) DDG: recherche d'événements culturels
-  BIND(CONCAT("événement culturel ", STR(?villageLabel)) AS ?keywords)
+  BIND(CONCAT("événement culturel ", STR(?capitalLabel)) AS ?keywords)
   BIND(
-    slm:SLM-MCP-TOOL(
+    ex:SLM-MCP-TOOL(
       "duckduckgo","duckduckgo.search",
-      slm:SLM-OBJ(
+      ex:SLM-OBJ(
         "query", ?keywords,
-        "limit", 1,
+        "limit", 3,
         "region", "fr-fr",
         "safesearch", "moderate"
       )
@@ -53,17 +46,17 @@ SELECT ?villageLabel ?url ?eventName ?eventDate ?score WHERE {
 
   GRAPH ?gSearch {
     ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
-    ?item a schema:DataFeedItem ; schema:position ?pos ; schema:item ?page .
-    ?page a schema:WebPage ; schema:name ?title .
-    BIND(?page AS ?url)
+    ?item a schema:DataFeedItem ;  schema:item ?page .
+    ?page a schema:WebPage  .
+    BIND(STR(?page) AS ?url)
     OPTIONAL { ?item schema:position ?pos }
   }
 
   # 3) Snapshot (texte court, redaction)
   BIND(
-    slm:SLM-MCP-TOOL(
+    ex:SLM-MCP-TOOL(
       "browser","browser.snapshot",
-      slm:SLM-OBJ(
+      ex:SLM-OBJ(
         "url", ?url,
         "wait_ms", 500,
         "text_max", 3000,
@@ -111,4 +104,4 @@ SELECT ?villageLabel ?url ?eventName ?eventDate ?score WHERE {
     GRAPH ?gSearch { ?item schema:position ?score }
   }
 }
-ORDER BY ?villageLabel ?score
+ORDER BY ?capitalLabel ?score
