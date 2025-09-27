@@ -1,0 +1,18 @@
+{
+  "retrieval": {
+    "recall_at_k": {
+      "1": 0.8461538461538461,
+      "2": 0.717948717948718,
+      "3": 0.38461538461538464
+    },
+    "mrr": 0.06938558448206002
+  },
+  "extraction": {
+    "date_exact": 0.9418604651162791,
+    "capacity_exact": 0.26744186046511625,
+    "venue_above_threshold": 0.4883720930232558,
+    "address_above_threshold": 0.13953488372093023,
+    "venue_mean_fuzzy": 58.03006987570236,
+    "address_mean_fuzzy": 23.754503907201958
+  }
+}

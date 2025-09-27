@@ -1,0 +1,87 @@
+label,score,city,city_orig,date,date_orig,venue,venue_orig,address,address_orig,capacity,capacity_orig
+Sofia,0.6140537858009338,Sofia,Sofia,2025-11-15,2025-11-15,,National Palace of Culture,,"1 Bulgaria Blvd, 1421 Sofia, Bulgaria",,5000
+Dublin,0.6311218738555908,Dublin,Dublin,2026-02-15,2026-02-15,,Dublin City Gallery,Dublin,"Dublin 2, Ireland",,500
+Dublin,0.497965931892395,Dublin,Dublin,2026-02-15,2026-02-15,Olympia Theatre,n66b711bac6e14b2dbd841e78a19ad5b3b128,,n66b711bac6e14b2dbd841e78a19ad5b3b127,,1260
+Amsterdam,0.6346501111984253,Amsterdam,Amsterdam,2025-11-15,2025-11-15,,Concertgebouw,,"Van Baerlestraat 10, 1071 AL Amsterdam",,5000
+Amsterdam,0.6243041157722473,Amsterdam,Amsterdam,2025-11-15,2025-11-15,,Rijksmuseum,,"Museumstraat 1, 1071 XX Amsterdam",,500
+Amsterdam,0.5995378494262695,Amsterdam,Amsterdam,2026-02-15,2026-02-15,The Melkweg,Melkweg,,n66b711bac6e14b2dbd841e78a19ad5b3b79,,1500
+Amsterdam,0.6346501111984253,Amsterdam,Amsterdam,2025-11-15,2025-11-15,,Concertgebouw,,"Van Baerlestraat 10, 1071 AL Amsterdam",,5000
+Amsterdam,0.6243041157722473,Amsterdam,Amsterdam,2025-11-15,2025-11-15,,Rijksmuseum,,"Museumstraat 1, 1071 XX Amsterdam",,500
+Amsterdam,0.5995378494262695,Amsterdam,Amsterdam,2026-02-15,2026-02-15,The Melkweg,Melkweg,,n66b711bac6e14b2dbd841e78a19ad5b3b79,,1500
+Stockholm,0.5555554032325745,Stockholm,Stockholm,2025-11-15,2025-11-15,Waterfront Congress Centre,Waterfront Congress Centre,null,"Nordenflychtsvägen 2, 111 71 Stockholm",null,2000
+Luxembourg,0.6480312347412109,Luxembourg,Luxembourg,2025-11-15,2025-11-15,,Luxembourg Art Gallery,,"12, Rue de la Poste, 1244 Luxembourg",,500
+Luxembourg,0.50489741563797,Valletta,Valletta,2025-11-01,2025-11-01,,Mediterranean Conference Centre,,"Triq l-Isptar, Valletta, Malta",,500
+Luxembourg,0.5048158168792725,Ljubljana,Ljubljana,null,2026-02-15,Slovenian Cinematheque,Slovenian Cinematheque,,"Miklošičeva cesta 28, 1000 Ljubljana",,200
+Vaduz,0.6689265966415405,Vaduz,Vaduz,2025-11-15,2025-11-15,,Kunstmuseum Liechtenstein,,"Städtle 32, 9490 Vaduz",,500
+Vaduz,0.5473942756652832,Vaduz,Vaduz,2026-02-15,2026-02-15,Vaduzer Saal,Vaduzer Saal,"Aulestrasse 30, 9490 Vaduz","Aulestrasse 30, 9490 Vaduz",500,500
+Oslo,0.6319644451141357,Oslo,Oslo,2026-01-15,2026-01-15,,Oslo City Hall,,"0150 Oslo, Norway",,500
+Prishtina,0.6355547904968262,Prishtina,Prishtina,2025-11-15,2025-11-15,Palace of Youth and Sports,Palace of Youth and Sports,10000 Prishtina,10000 Prishtina,2000,2000
+Prishtina,0.5730150938034058,Prishtina,Prishtina,2026-02-15,2026-02-15,National Theatre of Kosovo,National Theatre of Kosovo,,"Rruga George W. Bush, Prishtina, 10000",1000,1000
+Prishtina,0.493766188621521,Podgorica,Podgorica,2025-11-15,2025-11-15,Ndb91bb9985694871bf1d40831342647b,Podgorica City Theatre,N2e82a88ae23d4f1b81dcc9e17b391139,"Bulevar Džordža Vašingtona 98, 81000 Podgorica",500,500
+Paris,0.47381600737571716,Ljubljana,Ljubljana,null,2026-02-15,Slovenian Cinematheque,Slovenian Cinematheque,,"Miklošičeva cesta 28, 1000 Ljubljana",,200
+Paris,0.49274617433547974,Luxembourg,Luxembourg,2025-11-15,2025-11-15,Grand Théâtre de la Ville de Luxembourg,Grand Théâtre de la Ville de Luxembourg,null,"1, Rue du Château, 2919 Luxembourg",,1200
+Paris,0.4897739887237549,Paris,Paris,2026-02-15,2026-02-15,Le Theatre du Chatelet,Le Theatre du Chatelet,,"2 Rue Edouard Colonne, 75001 Paris",,2000
+Podgorica,0.7088437080383301,Podgorica,Podgorica,2025-11-15,2025-11-15,Ndb91bb9985694871bf1d40831342647b,Podgorica City Theatre,N2e82a88ae23d4f1b81dcc9e17b391139,"Bulevar Džordža Vašingtona 98, 81000 Podgorica",500,500
+Podgorica,0.5661032795906067,Podgorica,Podgorica,2025-11-15,2025-11-15,Podgorica Cultural Center,Podgorica Cultural Center,Mihaila Lalića 1,"Mihaila Lalića 1, Podgorica",500,500
+Podgorica,0.4661325216293335,Tirana,Tirana,2025-11-15,2025-11-15,National History Museum,National History Museum,"Rruga Aleksandër Prosi, 1000","Rruga Aleksandër Prosi, 1000, Tirana",500,500
+Rome,0.597941517829895,Rome,Rome,2025-11-15,2025-11-15,,Rome Exhibition Center,,"Via del Corso 123, 00187 Roma RM",500,500
+Rome,0.5771806836128235,Rome,Rome,2026-02-15,2026-02-15,Roma Convention Center,Roma Convention Center,,"Via Cristoforo Colombo, 00144 Roma RM, Italy",,2000
+Rome,0.544939398765564,Rome,Rome,2025-11-15,2025-11-15,Auditorium Parco della Musica,Auditorium Parco della Musica,"Via Pietro de Coubertin, 30","Via Pietro de Coubertin, 30",3000,3000
+Madrid,0.5075292587280273,Andorra la Vella,Andorra la Vella,2025-11-15,2025-11-15,Sports Centre,Sports Centre,,"Avinguda del Parc, Andorra la Vella",,5000
+Andorra la Vella,0.6937917470932007,Andorra la Vella,Andorra la Vella,2025-11-15,2025-11-15,Sports Centre,Sports Centre,,"Avinguda del Parc, Andorra la Vella",,5000
+Andorra la Vella,0.6544758081436157,Andorra la Vella,Andorra la Vella,2025-11-15,2025-11-15,Conference Centre,Conference Centre,,"Carretera General 2, AD500 Andorra la Vella",,1500
+Riga,0.759922444820404,Riga,Riga,2025-11-15,2025-11-15,null,Riga City Hall,null,"Rātslaukums 1, Riga, LV-1050",null,5000
+Riga,0.5547890067100525,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Bucharest,0.6693153381347656,Bucharest,Bucharest,2025-12-15,2025-12-15,null,National Arena,null,"37 Ion Mihalache Blvd, Bucharest 011224",null,5000
+Bucharest,0.6165175437927246,Bucharest,Bucharest,2026-02-15,2026-02-15,Sala Palatului,Sala Palatului,Bucharest,"Strada Ion Câmpineanu 28, 010033 Bucharest",,4000
+Tirana,0.7720897197723389,Tirana,Tirana,2025-11-15,2025-11-15,National History Museum,National History Museum,"Rruga Aleksandër Prosi, 1000","Rruga Aleksandër Prosi, 1000, Tirana",500,500
+Tirana,0.7237460017204285,Tirana,Tirana,2025-11-15,2025-11-15,null,Tirana National Theater,null,"Bulevardi Deshmoret e Kombit, 1001 Tirana",500,500
+Tirana,0.7202064990997314,Tirana,Tirana,2026-02-15,2026-02-15,Rogner Hotel,Rogner Hotel,,"Bulevardi Deshmoret e Kombit, Tirana, Albania",500,500
+Berlin,0.5890803337097168,Berlin,Berlin,2025-11-15,2025-11-15,,Museum of Contemporary Art,,"Friedrichstraße 103, 10117 Berlin",,500
+Berlin,0.5233519673347473,Berlin,Berlin,2026-02-15,2026-02-15,Berlin ExpoCenter,Berlin ExpoCenter,,"Messedamm 22, 14055 Berlin",,1000
+Berlin,0.5082948803901672,Prague,Prague,2025-11-15,2025-11-15,,Congress Centre Prague,,"5. května 1640/65, 140 21 Praha 4, Czechia",5000,1000
+Valletta,0.7555525302886963,Valletta,Valletta,2025-11-01,2025-11-01,,Mediterranean Conference Centre,,"Triq l-Isptar, Valletta, Malta",,500
+Valletta,0.6538060307502747,Valletta,Valletta,2026-02-15,2026-02-15,,Valletta Cinema,,"139 Republic Street, Valletta VLT 1110",,500
+Valletta,0.6310490965843201,Valletta,Valletta,2026-02-15,2026-02-15,,Manoel Theatre,,n66b711bac6e14b2dbd841e78a19ad5b3b102,,1000
+Moscow,0.6378052234649658,Moscow,Moscow,2025-11-15,2025-11-15,,Tretyakov Gallery,,"10, Krymsky Val, Moscow, 119049",,1000
+Moscow,0.5900010466575623,Moscow,Moscow,2025-11-15,2025-11-15,Historical Museum,Historical Museum,null,"Red Square, 1, Moscow, 109012",null,500
+Moscow,0.5611876845359802,Moscow,Moscow,2026-01-15,2026-01-15,the Bolshoi Theatre,Bolshoi Theatre,,"Teatralnaya Square, 1, Moscow, 125009",2200,2200
+Athens,0.580978512763977,Tirana,Tirana,2025-11-15,2025-11-15,National History Museum,National History Museum,"Rruga Aleksandër Prosi, 1000","Rruga Aleksandër Prosi, 1000, Tirana",500,500
+Athens,0.5969630479812622,Athens,Athens,2025-11-15,2025-11-15,National Art Gallery,National Art Gallery,"50, Vasileos Konstantinou Ave","50, Vasileos Konstantinou Ave, Athens",null,500
+Vienna,0.6751085519790649,Vienna,Vienna,2025-11-15,2025-11-15,City Hall,City Hall,,"1010 Vienna, Austria",,5000
+Vienna,0.605299174785614,Vienna,Vienna,2026-02-15,2026-02-15,Wiener Konzerthaus,Wiener Konzerthaus,null,"Lothringerstraße 20, 1030 Vienna",null,2000
+London,0.4381139874458313,Valletta,Valletta,2025-11-01,2025-11-01,,Mediterranean Conference Centre,,"Triq l-Isptar, Valletta, Malta",,500
+London,0.5792773962020874,London,London,2025-11-15,2025-11-15,Nd7177f435187400d96dece871635078e,O2 Arena,"1 Western Gateway, London SE10 0DX","1 Western Gateway, London SE10 0DX",20000,20000
+Warsaw,0.5981714725494385,Warsaw,Warsaw,2026-02-15,2026-02-15,,National Museum,,"Aleje Jerozolimskie 3, 00-495 Warsaw",500,500
+Warsaw,0.5804139375686646,Warsaw,Warsaw,2025-11-15,2025-11-15,Warsaw Cinema,Warsaw Cinema,"ul. Mazowiecka 11, 00-001 Warsaw","ul. Mazowiecka 11, 00-001 Warsaw",500,500
+Lisbon,0.610146164894104,Lisbon,Lisbon,2026-01-15,2026-01-15,,Lisbon Cinema,,"Rua do Carmo, 1200-092 Lisboa, Portugal",,500
+Lisbon,0.6038190126419067,Lisbon,Lisbon,2025-11-15,2025-11-15,,Coliseu dos Recreios,,n66b711bac6e14b2dbd841e78a19ad5b3b16,,5000
+Ljubljana,0.6936103105545044,Ljubljana,Ljubljana,null,2026-02-15,Slovenian Cinematheque,Slovenian Cinematheque,,"Miklošičeva cesta 28, 1000 Ljubljana",,200
+Ljubljana,0.582665741443634,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Ljubljana,0.6556148529052734,Ljubljana,Ljubljana,2025-11-15,2025-11-15,null,National Gallery,null,"Prešernova cesta 20, 1000 Ljubljana",null,500
+Skopje,0.568361759185791,Tirana,Tirana,2025-11-15,2025-11-15,National History Museum,National History Museum,"Rruga Aleksandër Prosi, 1000","Rruga Aleksandër Prosi, 1000, Tirana",500,500
+Skopje,0.7482677698135376,Skopje,Skopje,2025-11-15,2025-11-15,,National Gallery of Macedonia,,"bul. Goce Delcev 3, 1000 Skopje",,500
+Tallinn,0.5632212162017822,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Reykjavík,0.5430467128753662,Reykjavik,Reykjavík,2026-01-15,2026-01-15,Reykjavik Cinema,Reykjavik Cinema,,"Laugavegur 101, 105 Reykjavík",,500
+Prague,0.5156600475311279,Ljubljana,Ljubljana,null,2026-02-15,Slovenian Cinematheque,Slovenian Cinematheque,,"Miklošičeva cesta 28, 1000 Ljubljana",,200
+Prague,0.6968715190887451,Prague,Prague,2025-11-15,2025-11-15,,Congress Centre Prague,,"5. května 1640/65, 140 21 Praha 4, Czechia",5000,1000
+Prague,0.6565529704093933,Prague,Prague,2026-02-15,2026-02-15,,Rudolfinum,,"Alšovo nábřeží 12, 110 00 Praha 1",,5000
+Minsk,0.695118248462677,Minsk,Minsk,2025-11-15,2025-11-15,null,Minsk Arena,null,n66b711bac6e14b2dbd841e78a19ad5b3b28,null,5000
+Bratislava,0.693152666091919,Bratislava,Bratislava,2025-11-01,2025-11-01,null,Bratislava Castle,null,n66b711bac6e14b2dbd841e78a19ad5b3b74,null,5000
+Bratislava,0.6650098562240601,Bratislava,Bratislava,2026-02-15,2026-02-15,Old Town Hall,Old Town Hall,,"Hlavné námestie 1, 814 99 Bratislava",,500
+Bratislava,0.6214690804481506,Bratislava,Bratislava,2026-02-15,2026-02-15,Slovak National Theater,Slovak National Theater,,n66b711bac6e14b2dbd841e78a19ad5b3b36,,500
+Zagreb,0.6622306704521179,Zagreb,Zagreb,null,2025-11-15,N9339f7430b914fe7a992b41fa91e255f,Zagreb Dance Center,,"Ilica 25, 10000 Zagreb",null,200
+Nicosia,0.619343101978302,Nicosia,Nicosia,2026-02-15,2026-02-15,Nicosia Municipal Theatre,Nicosia Municipal Theatre,"16 Evagorou, 1016 Nicosia","16 Evagorou, 1016 Nicosia",600,600
+Nicosia,0.4704063832759857,Nicosia,Nicosia,2026-02-15,2026-02-15,Nicosia Municipal Theater,Nicosia Municipal Theater,,"28th October Avenue 27, 2408 Nicosia, Cyprus",,500
+Sarajevo,0.6824003458023071,Sarajevo,Sarajevo,2025-11-15,2025-11-15,Skenderija Center,Skenderija Center,Hamdije Kresevljakovica 23,Hamdije Kresevljakovica 23,5000,5000
+Sarajevo,0.6511660814285278,Sarajevo,Sarajevo,2025-11-15,2025-11-15,Sarajevo National Theatre,Sarajevo National Theatre,,"Obala Kulina Bana 9, 71000 Sarajevo",,500
+City of Brussels,0.6037862300872803,Brussels,City of Brussels,2026-02-15,2026-02-15,Atomium,Atomium,,"Atomium, 1020 Brussels",500,500
+Bern,0.610664963722229,Bern,Bern,2025-11-15,2025-11-15,Kursaal Bern,Kursaal Bern,Kornhausstrasse 3,"Kornhausstrasse 3, 3000 Bern",5000,5000
+Vilnius,0.7389068603515625,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Vilnius,0.650981068611145,Vilnius,Vilnius,2025-11-15,2025-11-15,Vilnius Art Gallery,Vilnius Art Gallery,,n66b711bac6e14b2dbd841e78a19ad5b3b22,,500
+Vilnius,0.6203052997589111,Vilnius,Vilnius,2026-02-15,2026-02-15,Lithuanian Exhibition and Congress Centre,Lithuanian Exhibition and Congress Centre,,"Laisvės ave. 5, 04215 Vilnius",500,500
+Budapest,0.533409833908081,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Budapest,0.5258617997169495,Prague,Prague,2025-11-15,2025-11-15,,Congress Centre Prague,,"5. května 1640/65, 140 21 Praha 4, Czechia",5000,1000
+Helsinki,0.5506033301353455,Vilnius,Vilnius,2025-11-15,2025-11-15,,Vilnius Congress Centre,,n66b711bac6e14b2dbd841e78a19ad5b3b120,,5000
+Helsinki,0.6166391372680664,Helsinki,Helsinki,2026-02-15,2026-02-15,Helsinki Cinema,Helsinki Cinema,,"Mannerheimintie 22-24, 00100 Helsinki",,500
+Helsinki,0.5918879508972168,Helsinki,Helsinki,2026-02-15,2026-02-15,Helsinki Art Museum,Helsinki Art Museum,,"Kaivokatu 2, 00100 Helsinki",,500
