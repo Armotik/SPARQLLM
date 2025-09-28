@@ -5,12 +5,11 @@ PREFIX ex: <http://example.org/>
 PREFIX schema: <https://schema.org/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?issue ?title ?state ?number WHERE {
-  BIND(ex:SLM-GITHUB("openwrt", "openwrt", "issues", "", 5) AS ?gGithub)
+SELECT ?pr ?title  WHERE {
+  BIND(ex:SLM-GITHUB("openwrt", "openwrt", "pulls", "", 20) AS ?gGithub)
   GRAPH ?gGithub {
-    ?issue a schema:Issue ;
-           rdfs:label ?title ;
-           schema:status ?state ;
-           schema:identifier ?number .
+      ?repo a schema:Repository ;
+          schema:hasPart ?pr .
+    OPTIONAL { ?pr schema:name ?title }
   }
-} ORDER BY DESC(?number) LIMIT 5
+} LIMIT 5

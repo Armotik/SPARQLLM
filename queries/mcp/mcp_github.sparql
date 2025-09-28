@@ -1,11 +1,11 @@
 # run with:
-# slm-run --config config.ini -f queries/mcp_github_with_prov.sparql --debug
+# slm-run --config config.ini -f queries/mcp/mcp_github.sparql --debug
 
 PREFIX slm:    <http://example.org/>
 PREFIX schema: <https://schema.org/>
 PREFIX prov:   <http://www.w3.org/ns/prov#>
 
-SELECT  ?title ?t  WHERE {
+SELECT  ?pr ?title ?t  WHERE {
   # Appel tool -> graph blank node contenant le fragment JSON-LD (repo + hasPart)
   BIND( slm:SLM-MCP-TOOL("github","github.pullRequests.list",
         slm:SLM-OBJ("owner","openwrt","repo","openwrt","state","open","limit",10)) AS ?g )
@@ -19,5 +19,5 @@ SELECT  ?title ?t  WHERE {
   }
 }
 ORDER BY DESC(?t)
-LIMIT 20
+LIMIT 5
 
