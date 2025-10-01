@@ -1,18 +1,18 @@
 {
   "retrieval": {
     "recall_at_k": {
-      "1": 0.8421052631578947,
-      "2": 0.7368421052631579,
-      "3": 0.2894736842105263
+      "1": 0.025,
+      "2": 0.025,
+      "3": 0.025
     },
-    "mrr": 0.0721336640422751
+    "mrr": 0.0003333333333333334
   },
   "extraction": {
     "date_exact": 1.0,
-    "capacity_exact": 0.2839506172839506,
-    "venue_above_threshold": 0.5679012345679012,
-    "address_above_threshold": 0.16049382716049382,
-    "venue_mean_fuzzy": 63.142012486945845,
-    "address_mean_fuzzy": 24.348635036777555
+    "capacity_exact": 1.0,
+    "venue_above_threshold": 1.0,
+    "address_above_threshold": 0.5158730158730159,
+    "venue_mean_fuzzy": 100.0,
+    "address_mean_fuzzy": 83.04415540565611
   }
 }
