@@ -1,0 +1,66 @@
+# slm-run --config config.ini -f queries/cultural/city-event-faiss-mcp.sparql --debug
+
+## Use MCP FAISS provider and LLM without READFILE
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX schema: <http://schema.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?label ?match ?score ?date ?name WHERE {
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT * WHERE {
+        ?country wdt:P31 wd:Q6256;  # sovereign state
+                 wdt:P30 wd:Q46;   # in Europe
+                 wdt:P36 ?capital. # has capital
+        ?capital rdfs:label ?label.
+        FILTER(LANG(?label) = "en")
+      } LIMIT 5 }
+  }
+
+  BIND(CONCAT("I want  cultural events  that are located in ", STR(?label)) AS ?rag)
+
+  # Call the MCP FAISS provider. We pass the index base (without extension) and the query.
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.search_index",
+      ex:SLM-OBJ(
+        "file", "./cultural-events.ttl",
+        "index_path", "./data/cultural_events_faiss",
+        "query", ?rag,
+        "k", 3
+      )
+    ) AS ?gf
+  )
+
+  GRAPH ?gf {
+    # Find any match node with schema:text
+    ?match schema:text ?textVal .
+    OPTIONAL { ?match <http://example.org/score> ?score }
+  }
+
+  # Build a concise prompt using the text returned by the provider (no READFILE)
+  BIND(CONCAT(
+    "We consider a type Event with the following properties:\n",
+    "  <http://schema.org/StartDate> : The start date of the event\n",
+    "  <http://schema.org/name> : The name of the event.\n",
+    "Extract from the text below the date of the event and the name of the event.\n",
+    "Generate only the JSON-LD instance of the Event type, using these keys exactly:\n",
+    "@context: https://schema.org/\n@type: Event\nhttp://schema.org/StartDate: 0\nhttp://schema.org/name: 1\n\nText:\n",
+    STR(?textVal)
+  ) AS ?prompt)
+
+  # Call the LLM graph builder (OLLAMA) passing the prompt and the match node as the context URI
+  BIND(ex:SLM-LLMGRAPH_OLLA(?prompt, ?match) AS ?gl)
+
+  # Extract the Event produced by the LLM
+  GRAPH ?gl {
+#    ?match <http://example.org/has_schema_type> ?root .
+#    ?root a <http://schema.org/Event> .
+    ?root <http://schema.org/StartDate> ?date .
+    ?root <http://schema.org/name> ?name .
+  }
+}
+#ORDER BY DESC(?score)
+LIMIT 10

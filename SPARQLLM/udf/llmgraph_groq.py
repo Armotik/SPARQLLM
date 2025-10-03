@@ -116,7 +116,7 @@ def validate_jsonld_with_shacl(jsonld_str: str, shacl_path: str):
 
 
 
-def call_groq_api(client, model, messages, max_retries=5, max_wait=120):
+def call_groq_api(client, model, messages, temperature=0.0, max_retries=5, max_wait=120):
 
     retry_delay = 1
     last_user_content = next(
@@ -125,10 +125,22 @@ def call_groq_api(client, model, messages, max_retries=5, max_wait=120):
     )
     prompt_hash = hashlib.sha256(last_user_content.encode('utf-8')).hexdigest()
 
+    # Clamp/validate temperature (Groq generally supports 0..2)
+    try:
+        if temperature is None:
+            temperature = 0.0
+        temperature = float(temperature)
+    except Exception:
+        temperature = 0.0
+    if temperature < 0:
+        temperature = 0.0
+    if temperature > 2:
+        temperature = 2.0
+
     params = {
         "model": model,
         "messages": messages,
-        "temperature": 0
+        "temperature": temperature
     }
     # Decide per-model JSON response support
     supported = support_json_by_model.get(model)
@@ -223,7 +235,15 @@ def sanitize_jsonld_context(raw: str) -> str:
     if isinstance(data, dict):
         ctx = data.get('@context')
         if isinstance(ctx, str):
-            data['@context'] = {"@vocab": ctx}
+            # Normalise schema.org context: force https + trailing slash
+            if 'schema.org' in ctx:
+                # drop any fragment/query
+                base = 'https://schema.org/'
+                data['@context'] = {"@vocab": base}
+            else:
+                if not ctx.endswith('/'):
+                    ctx = ctx + '/'
+                data['@context'] = {"@vocab": ctx}
         elif ctx is None:
             # Par sécurité, on n'impose pas un contexte; mais on pourrait:
             # data['@context'] = {"@vocab": "https://schema.org/"}
@@ -232,10 +252,10 @@ def sanitize_jsonld_context(raw: str) -> str:
 
 
 
-def llm_graph_groq(prompt, uri=None):
-    return llm_graph_groq_model(prompt, uri, model)
+def llm_graph_groq(prompt, uri=None, temperature: float = 0.0):
+    return llm_graph_groq_model(prompt, uri, model, temperature=temperature)
 
-def llm_graph_groq_model(prompt,uri,model):
+def llm_graph_groq_model(prompt,uri,model, temperature: float = 0.0):
     global store
 
     assert model != "", "GROQ Model not set in config.ini"
@@ -243,6 +263,30 @@ def llm_graph_groq_model(prompt,uri,model):
         raise RuntimeError("GROQ_API_KEY is not set. Using default value, which may not work for real API calls.")
 
     logger.debug(f"uri: {uri}, model: {model}, Prompt: {prompt[:50]} <...>")
+
+    # Ordered fallback list if a model is decommissioned. You can extend via env GROQ_FALLBACK_MODELS="m1,m2"
+    fallback_env = os.environ.get("GROQ_FALLBACK_MODELS")
+    if fallback_env:
+        fallback_candidates = [m.strip() for m in fallback_env.split(',') if m.strip()]
+    else:
+        # Reasonable current public Groq models (adjust as needed over time)
+        fallback_candidates = [
+            model,
+            "llama3-8b-8192",
+            "llama3-70b-8192",
+            "mixtral-8x7b"  # legacy shorter alias if still available
+        ]
+    # Ensure uniqueness while preserving order
+    seen = set()
+    ordered_models = []
+    for m in fallback_candidates:
+        if m and m not in seen:
+            ordered_models.append(m)
+            seen.add(m)
+
+    current_model_index = 0
+    model = ordered_models[current_model_index]
+    attempted_models = []  # keep track of fallback sequence (excluding final)
 
 
     if uri is None:
@@ -259,6 +303,7 @@ def llm_graph_groq_model(prompt,uri,model):
     named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_prompt"), Literal(str(prompt))))
     named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_model"), Literal(str(model))))
     named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_uri"), Literal(str(uri))))
+    named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/param_temperature"), Literal(float(temperature), datatype=XSD.float)))
 
 
     # Conversation setup
@@ -278,10 +323,11 @@ def llm_graph_groq_model(prompt,uri,model):
     ]
 
     max_attempts = 3
-    for attempt in range(1, max_attempts + 1):
+    attempt = 1
+    while attempt <= max_attempts:
         try:
 
-            response = call_groq_api(client, model, messages)
+            response = call_groq_api(client, model, messages, temperature=temperature)
             content = response.choices[0].message.content
             logger.debug(f"Response (attempt {attempt}): {content}")
             # Extraire le bloc JSON complet
@@ -350,14 +396,37 @@ def llm_graph_groq_model(prompt,uri,model):
                 })
 
         except Exception as e:
+            msg = str(e)
+            decommissioned = 'model_decommissioned' in msg or 'has been decommissioned' in msg
+            if decommissioned and current_model_index + 1 < len(ordered_models):
+                old_model = model
+                attempted_models.append(old_model)
+                current_model_index += 1
+                model = ordered_models[current_model_index]
+                logger.warning(f"[GROQ] Model '{old_model}' decommissioned -> switching to fallback '{model}' and retrying (attempt stays {attempt})")
+                # Reset messages to original to avoid pollution from previous assistant content
+                messages = [m for m in messages if m['role'] in ('system','user')]
+                continue  # do not increment attempt for fallback switch
+
             logger.warning(f"Attempt {attempt}: JSON-LD parsing failed — {e}, for uri: {uri}")
             if attempt == max_attempts:
-                error_message =f"Maximum retry attempts reached. Error in parsing JSON-LD: {e}"
+                error_message = f"Maximum retry attempts reached. Error in parsing JSON-LD: {e} (final model={model})"
                 logger.error(error_message)
                 named_graph.add((uri, URIRef("http://example.org/has_error"), Literal(error_message, datatype=XSD.string)))
-#                raise  # Relever l'exception pour la traiter plus haut si besoin
+                break
+            attempt += 1
 
-    return graph_uri 
+    # Record provenance about model selection (final + attempted fallbacks)
+    try:
+        # final model triple
+        named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/final_model"), Literal(str(model))))
+        # attempted (if any)
+        for am in attempted_models:
+            named_graph.add((URIRef("http://example.org/GROK"), URIRef("http://example.org/attempted_model"), Literal(str(am))))
+    except Exception as _prov_err:
+        logger.debug(f"[GROQ] Could not add model provenance triples: {_prov_err}")
+
+    return graph_uri
 
 
 

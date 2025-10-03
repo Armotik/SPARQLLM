@@ -17,6 +17,8 @@ from SPARQLLM.udf.mcp.providers.postgres_provider import get_pg_provider
 from SPARQLLM.udf.mcp.providers.duckduckgo_provider import get_duckduckgo_provider
 from SPARQLLM.udf.mcp.providers.browser_provider import get_browser_provider
 from SPARQLLM.udf.mcp.providers.faiss_provider import get_provider as get_faiss_provider
+from SPARQLLM.udf.llmgraph_groq import llm_graph_groq_model, model as default_groq_model
+from SPARQLLM.config import ConfigSingleton
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,9 @@ _pg_provider = get_pg_provider()
 _ddg_provider = get_duckduckgo_provider()
 _browser = get_browser_provider()
 _faiss_provider = get_faiss_provider()
+
+# GROQ model config singleton (reuse existing config if needed)
+_cfg = ConfigSingleton()
 
 
 def _tool_dispatch(tool_args: dict, tool_name: str):
@@ -73,6 +78,53 @@ _MCP.connect_static("faiss")
 _MCP.register_static_tool("faiss", "faiss.index_file", lambda a: _faiss_provider.call("faiss.index_file", a))
 _MCP.register_static_tool("faiss", "faiss.search_index", lambda a: _faiss_provider.call("faiss.search_index", a))
 
+# GROQ tool wrapper
+def _groq_generate(args: dict):
+    """Call Groq LLM to generate JSON-LD and return as MCP JSON-LD contract.
+
+        Inputs (args):
+            prompt (str, required)
+            uri (str, optional) -> used to derive stable graph IRI if provided
+            model (str, optional) -> override default model from config
+            temperature (float, optional, 0-2) -> sampling temperature (default 0)
+
+    Returns:
+      {"media_type":"application/ld+json", "jsonld": <obj>, "graph_anchor": <iri>}
+    """
+    import json as _json
+    from rdflib import URIRef
+    prompt = args.get('prompt') or ''
+    if not prompt:
+        return {"error": "missing_prompt", "message": "'prompt' argument is required"}
+    uri = args.get('uri')
+    model = args.get('model') or _cfg.config['Requests'].get('SLM-GROQ-MODEL', default_groq_model)
+    temperature = args.get('temperature', 0.0)
+    try:
+        temperature = float(temperature)
+    except Exception:
+        temperature = 0.0
+    try:
+        graph_uri = llm_graph_groq_model(prompt, uri, model, temperature=temperature)
+    except Exception as e:
+        # Structured error object so JSON->JSON-LD heuristique crée des triples (schema:error, schema:message, schema:additionalType)
+        return {
+            "status": "error",
+            "error": "groq_call_failed",
+            "message": str(e),
+            "model": model,
+            "temperature": temperature
+        }
+    g = store.get_context(graph_uri)
+    try:
+        jsonld_str = g.serialize(format='json-ld')
+        jsonld_obj = _json.loads(jsonld_str)
+    except Exception as e:
+        return {"error": "serialize_failed", "message": str(e)}
+    return {"media_type": "application/ld+json", "jsonld": jsonld_obj, "graph_anchor": str(graph_uri)}
+
+_MCP.connect_static("groq")
+_MCP.register_static_tool("groq", "groq.generate_jsonld", lambda a: _groq_generate(a))
+
 
 _MCP.connect_stdio("echo", ["python","SPARQLLM/servers/echo_mcp_server.py"])
 
@@ -81,6 +133,7 @@ _MCP.connect_stdio("echo", ["python","SPARQLLM/servers/echo_mcp_server.py"])
 SCHEMA = Namespace("https://schema.org/")
 PROV   = Namespace("http://www.w3.org/ns/prov#")
 from datetime import datetime, timezone
+import time as _time
 
 # --- mappers optionnels par tool (JSON -> JSON-LD) ---
 PROFILE_MAPPERS = {}
@@ -151,9 +204,17 @@ def json_to_jsonld(data):
     return jsonld_data
 
 
-def _attach_prov(named_graph: Graph, graph_uri: URIRef, handle: str, tool_name: str, args: dict, source_hint: str = None):
-    """Ajoute des triples PROV-O de provenance dans le named graph cible."""
-    now = datetime.now(timezone.utc).isoformat()
+def _attach_prov(named_graph: Graph, graph_uri: URIRef, handle: str, tool_name: str, args: dict,
+                 source_hint: str = None,
+                 start_dt: datetime | None = None,
+                 end_dt: datetime | None = None,
+                 duration_s: float | None = None):
+    """Ajoute des triples PROV-O + métriques temps.
+
+    - start_dt / end_dt: datetimes UTC
+    - duration_s: float (secondes)
+    """
+    now = (end_dt or datetime.now(timezone.utc)).isoformat()
     act = BNode()
     agent = URIRef(f"urn:mcp:handle:{handle}")
     tool  = URIRef(f"urn:mcp:tool:{tool_name}")
@@ -162,6 +223,14 @@ def _attach_prov(named_graph: Graph, graph_uri: URIRef, handle: str, tool_name: 
     # Entité = le graphe (on annote directement l'IRI du graphe nommé)
     named_graph.add((graph_uri, PROV.wasGeneratedBy, act))
     named_graph.add((graph_uri, PROV.generatedAtTime, Literal(now, datatype=XSD.dateTime)))
+    if start_dt:
+        named_graph.add((act, PROV.startedAtTime, Literal(start_dt.isoformat(), datatype=XSD.dateTime)))
+    if end_dt:
+        named_graph.add((act, PROV.endedAtTime, Literal(end_dt.isoformat(), datatype=XSD.dateTime)))
+    if duration_s is not None:
+        # Duration sur l'activité et sur l'entité (double annotation pratique)
+        named_graph.add((act, SCHEMA.duration, Literal(round(duration_s,6), datatype=XSD.decimal)))
+        named_graph.add((graph_uri, SCHEMA.duration, Literal(round(duration_s,6), datatype=XSD.decimal)))
     if source_hint:
         named_graph.add((graph_uri, PROV.wasDerivedFrom, URIRef(source_hint)))
 
@@ -234,8 +303,13 @@ def slm_mcp_tool(handle: str,
             except Exception as re_err:
                 logger.warning(f"[MCP] Faiss re-registration failed: {re_err}")
 
-        # 1) appel MCP
+        # 1) appel MCP (chronométré)
+        _call_start_monotonic = _time.perf_counter()
+        _call_start_dt = datetime.now(timezone.utc)
         result = _MCP.tools_call(handle, tool_name, args)
+        _call_end_dt = datetime.now(timezone.utc)
+        _call_end_monotonic = _time.perf_counter()
+        _duration = _call_end_monotonic - _call_start_monotonic
         print("MCP result:", result)
 
         # Petite heuristique de source (optionnelle)
@@ -249,17 +323,32 @@ def slm_mcp_tool(handle: str,
         if isinstance(result, dict) and result.get("media_type") == "application/ld+json":
             jsonld_data = result.get("jsonld")
             print("MCP JSON-LD:", json.dumps(jsonld_data))
-
-            # The provider is expected to return RDF-ready JSON-LD (possibly
-            # with an @graph). Parse it directly into a named graph.
             graph_uri = BNode()
             named_graph = store.get_context(graph_uri)
-            # jsonld_data may be a dict (convert to string) or a JSON-LD string
-            payload = json.dumps(jsonld_data) if isinstance(jsonld_data, dict) else jsonld_data
+            if isinstance(jsonld_data, list):
+                # Wrap list into @graph container
+                payload_obj = {"@context": "https://schema.org/", "@graph": jsonld_data}
+                payload = json.dumps(payload_obj)
+            elif isinstance(jsonld_data, dict):
+                payload = json.dumps(jsonld_data)
+            else:
+                payload = str(jsonld_data)
             named_graph.parse(data=payload, format="json-ld")
-            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
+            # Status (succès implicite si pas de champ status)
+            status_val = result.get("status", "success") if isinstance(result, dict) else "success"
+            named_graph.add((graph_uri, URIRef("http://example.org/status"), Literal(status_val)))
+            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint,
+                         start_dt=_call_start_dt, end_dt=_call_end_dt, duration_s=_duration)
             print("Named graph has", len(named_graph), "triples")
-            for t in named_graph: print(f"triple:", t)
+            # Affichage optionnel des prédicats distincts (debug)
+            # try:
+            #     preds = sorted({str(p) for (_, p, _) in named_graph})
+            #     print(f"Distinct predicates ({len(preds)}):")
+            #     for pr in preds:
+            #         print("  -", pr)
+            # except Exception as _pred_err:
+            #     logger.debug(f"[MCP] Unable to list distinct predicates: {_pred_err}")
+            #for t in named_graph: print(f"triple:", t)
             return graph_uri
 
         # 3) mapper dédié si disponible
@@ -267,7 +356,11 @@ def slm_mcp_tool(handle: str,
         if mapper and isinstance(result, (dict, list)):
             jsonld = mapper(result)
             giri = _jsonld_to_named_graph(jsonld, graph_name_hint)
-            _attach_prov(store.get_context(giri), giri, handle, tool_name, args, source_hint)
+            gctx = store.get_context(giri)
+            status_val = result.get("status", "success") if isinstance(result, dict) else "success"
+            gctx.add((giri, URIRef("http://example.org/status"), Literal(status_val)))
+            _attach_prov(store.get_context(giri), giri, handle, tool_name, args, source_hint,
+                         start_dt=_call_start_dt, end_dt=_call_end_dt, duration_s=_duration)
             return giri
 
         # 4) heuristique générique JSON -> JSON-LD
@@ -277,7 +370,10 @@ def slm_mcp_tool(handle: str,
             graph_uri = BNode()
             named_graph = store.get_context(graph_uri)
             named_graph.parse(data=json.dumps(jsonld_data), format="json-ld")
-            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint)
+            status_val = result.get("status", "success") if isinstance(result, dict) else "success"
+            named_graph.add((graph_uri, URIRef("http://example.org/status"), Literal(status_val)))
+            _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint,
+                         start_dt=_call_start_dt, end_dt=_call_end_dt, duration_s=_duration)
             return graph_uri
 
         # 5) fallback: pas de RDF possible
@@ -287,4 +383,26 @@ def slm_mcp_tool(handle: str,
     except Exception as e:
         logger.error(f"[MCP] Error calling tool: {e}")
         traceback.print_exc()
-        return None
+        try:
+            # Tentative d'ajout d'un graphe minimal de provenance avec status=error + durée si dispo
+            graph_uri = BNode()
+            named_graph = store.get_context(graph_uri)
+            named_graph.add((graph_uri, URIRef("http://example.org/status"), Literal("error")))
+            named_graph.add((graph_uri, URIRef("http://example.org/error_message"), Literal(str(e)[:500])))
+            # Si les variables de timing existent
+            if '_call_start_dt' in locals():
+                end_dt = datetime.now(timezone.utc)
+                if '_call_start_monotonic' in locals() and '_call_end_monotonic' not in locals():
+                    end_mono = _time.perf_counter()
+                    duration_s = end_mono - _call_start_monotonic
+                else:
+                    duration_s = None
+                _attach_prov(named_graph, graph_uri, handle, tool_name, args if 'args' in locals() else {},
+                             source_hint=None,
+                             start_dt=_call_start_dt,
+                             end_dt=end_dt,
+                             duration_s=duration_s)
+            return graph_uri
+        except Exception as prov_e:
+            logger.debug(f"[MCP] Unable to record error provenance: {prov_e}")
+            return None

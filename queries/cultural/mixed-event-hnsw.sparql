@@ -1,0 +1,78 @@
+# HNSW variant of mixed-event.sparql
+# Build/search an HNSW FAISS index (defaults: M=32, efConstruction=200) and compute aggregated precision per keyword.
+# Run:
+#   slm-run --config config.ini -f queries/cultural/mixed-event-hnsw.sparql --debug
+
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX schema: <http://schema.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?keyword
+  (SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) AS ?numCorrect)
+  (COUNT(?label) AS ?totalRows)
+  ((SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) / COUNT(?label)) AS ?precision)
+WHERE {
+  # Fetch European sovereign state capitals
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT DISTINCT ?label WHERE {
+        ?country wdt:P31 wd:Q6256;  # sovereign state
+                 wdt:P30 wd:Q46;   # in Europe
+                 wdt:P36 ?capital. # has capital
+        ?capital rdfs:label ?label.
+        FILTER(LANG(?label) = "en")
+      } ORDER BY ?label LIMIT 1
+    }
+  }
+
+  # Keywords to drive the RAG style query
+  {
+    SELECT DISTINCT ?keyword WHERE {
+      VALUES ?keyword {
+        "concert"
+        "performance"
+        "festival"
+        "exhibition"
+        "conference"
+        "film screening"
+        "cultural event"
+      }
+    }
+  }
+
+  # Build the natural language query
+  BIND(CONCAT("I want  ", STR(?keyword), " event that are located in ", STR(?label)) AS ?rag)
+
+  # HNSW search: if the index does not yet exist it will be built with index_type=hnsw (default M=32, efConstruction=200)
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.search_index",
+      ex:SLM-OBJ(
+        "file", "./mixed-events.ttl",
+        "index_path", "./data/mixed_events_hnsw",
+        "index_type", "hnsw",
+        "metric", "ip",
+        "query", ?rag,
+        "k", 3,
+        "hnsw_ef_search", 80
+      )
+    ) AS ?gf
+  )
+
+  GRAPH ?gf {
+    ?match schema:text ?textVal .
+    ?match schema:venue ?venue_orig .
+    ?match schema:address ?address_orig .
+    ?match schema:capacity ?capacity_orig .
+    ?match schema:startDate ?date_orig .
+    ?match schema:cityLabel ?city_orig .
+    ?match schema:type ?type_orig .
+    ?match <http://example.org/score> ?score .
+    FILTER(?score > 0.7)
+  }
+
+  FILTER(BOUND(?label) && BOUND(?city_orig) && BOUND(?type_orig))
+}
+GROUP BY ?keyword

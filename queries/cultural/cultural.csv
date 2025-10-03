@@ -13,7 +13,7 @@ Amsterdam,0.684638500213623,cultural,Amsterdam,Amsterdam,2025-12-05,2025-12-05,D
 Amsterdam,0.6598635315895081,science,Amsterdam,Amsterdam,2025-11-20,2025-11-20,City Concert Hall,City Concert Hall,"456 Elm St, Othertown","456 Elm St, Othertown",500,500
 Stockholm,0.6572163105010986,science,Stockholm,Stockholm,2026-01-10,2026-01-10,Main Street Conference Venue,Main Street Conference Venue,"456 Elm St, Othertown","456 Elm St, Othertown",5000,5000
 Stockholm,0.6419147253036499,science,Stockholm,Stockholm,2025-10-15,2025-10-15,Downtown Exhibition Center,Downtown Exhibition Center,"456 Elm St, Othertown","456 Elm St, Othertown",10000,10000
-Stockholm,0.6279793977737427,cultural,Stockholm,Stockholm,2026-02-14,2026-02-14,City Concert Hall,City Concert Hall,"456 Elm St, Othertown","456 Elm St, Othertown",5000,5000
+Stockholm,0.6279793977737427,cultural,Stockholm,Stockholm,2026-02-14,2026-02-14,City Concert Hall,City Concert Hall,"456 Elm St, Othertown, Stockholm","456 Elm St, Othertown",5000,5000
 Luxembourg,0.6825399398803711,cultural,Luxembourg,Luxembourg,2025-11-20,2025-11-20,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown","123 Main St, Anytown",5000,5000
 Luxembourg,0.6341585516929626,science,Luxembourg,Luxembourg,2025-12-05,2025-12-05,Downtown Exhibition Center,Downtown Exhibition Center,"789 Oak St, Sometown","789 Oak St, Sometown",10000,10000
 Luxembourg,0.6032740473747253,science,Luxembourg,Luxembourg,2025-12-05,2025-12-05,Grand Theater,Grand Theater,"456 Elm St, Othertown","456 Elm St, Othertown",500,500
@@ -52,7 +52,7 @@ Riga,0.7315990924835205,cultural,Riga,Riga,2025-11-20,2025-11-20,Downtown Exhibi
 Riga,0.7188171148300171,cultural,Riga,Riga,2026-01-10,2026-01-10,Main Street Conference Venue,Main Street Conference Venue,"456 Elm St, Othertown","456 Elm St, Othertown",10000,10000
 Vaduz,0.6760939955711365,cultural,Vaduz,Vaduz,2026-01-10,2026-01-10,Downtown Exhibition Center,Downtown Exhibition Center,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
 Vaduz,0.6367707252502441,cultural,Vaduz,Vaduz,2025-12-05,2025-12-05,Main Street Conference Venue,Main Street Conference Venue,"789 Oak St, Sometown","789 Oak St, Sometown",2000,2000
-Vaduz,0.6497496962547302,science,Vaduz,Vaduz,2026-03-01,2026-03-01,Central Park Amphitheater,Central Park Amphitheater,"456 Elm St, Othertown","456 Elm St, Othertown",10000,10000
+Vaduz,0.6497496962547302,science,Othertown,Vaduz,2026-03-01,2026-03-01,Central Park Amphitheater,Central Park Amphitheater,"456 Elm St, Othertown","456 Elm St, Othertown",10000,10000
 Valletta,0.7189445495605469,science,Valletta,Valletta,2025-12-05,2025-12-05,City Concert Hall,City Concert Hall,"123 Main St, Anytown","123 Main St, Anytown",1000,1000
 Valletta,0.6821961998939514,cultural,Valletta,Valletta,2025-11-20,2025-11-20,Downtown Exhibition Center,Downtown Exhibition Center,"123 Main St, Anytown","123 Main St, Anytown",500,500
 Valletta,0.6990112662315369,science,Valletta,Valletta,2026-02-14,2026-02-14,Riverside Film Studio,Riverside Film Studio,"456 Elm St, Othertown","456 Elm St, Othertown",5000,5000
@@ -62,7 +62,7 @@ Moscow,0.6113041639328003,science,Moscow,Moscow,2026-03-01,2026-03-01,Downtown E
 Athens,0.6648123264312744,cultural,Athens,Athens,2025-10-15,2025-10-15,Main Street Conference Venue,Main Street Conference Venue,"789 Oak St, Sometown","789 Oak St, Sometown",3000,3000
 Athens,0.6561980843544006,cultural,Athens,Athens,2026-01-10,2026-01-10,Central Park Amphitheater,Central Park Amphitheater,"789 Oak St, Sometown","789 Oak St, Sometown",10000,10000
 Athens,0.6296273469924927,science,Athens,Athens,2025-10-15,2025-10-15,Central Park Amphitheater,Central Park Amphitheater,"456 Elm St, Othertown","456 Elm St, Othertown",500,500
-Vienna,0.6587527394294739,cultural,Vienna,Vienna,2025-10-15,2025-10-15,Central Park Amphitheater,Central Park Amphitheater,"123 Main St, Anytown","123 Main St, Anytown",1000,1000
+Vienna,0.6587527394294739,cultural,Anytown,Vienna,2025-10-15,2025-10-15,Central Park Amphitheater,Central Park Amphitheater,"123 Main St, Anytown","123 Main St, Anytown",1000,1000
 Vienna,0.6384259462356567,science,Vienna,Vienna,2026-02-14,2026-02-14,Grand Theater,Grand Theater,"456 Elm St, Othertown","456 Elm St, Othertown",1000,1000
 Vienna,0.5870963335037231,science,Vienna,Vienna,2026-02-14,2026-02-14,City Concert Hall,City Concert Hall,"456 Elm St, Othertown","456 Elm St, Othertown",2000,2000
 London,0.5715373158454895,cultural,London,London,2026-01-10,2026-01-10,Grand Theater,Grand Theater,"123 Main St, Anytown","123 Main St, Anytown",500,500
@@ -74,8 +74,8 @@ Bern,0.5656198859214783,science,Bern,Bern,2026-02-14,2026-02-14,Central Park Amp
 Bratislava,0.7332770824432373,cultural,Bratislava,Bratislava,2026-03-01,2026-03-01,Main Street Conference Venue,Main Street Conference Venue,"789 Oak St, Sometown","789 Oak St, Sometown",10000,10000
 Bratislava,0.7183653116226196,cultural,Bratislava,Bratislava,2026-02-14,2026-02-14,Grand Theater,Grand Theater,"789 Oak St, Sometown","789 Oak St, Sometown",1000,1000
 Bratislava,0.6931464672088623,science,Bratislava,Bratislava,2026-03-01,2026-03-01,Grand Theater,Grand Theater,"456 Elm St, Othertown","456 Elm St, Othertown",500,500
-City of Brussels,0.624948263168335,cultural,Brussels,City of Brussels,2025-12-05,2025-12-05,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
-City of Brussels,0.6149275898933411,cultural,Brussels,City of Brussels,2026-03-01,2026-03-01,Grand Theater,Grand Theater,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
+City of Brussels,0.624948263168335,cultural,City of Brussels,City of Brussels,2025-12-05,2025-12-05,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
+City of Brussels,0.6149275898933411,cultural,City of Brussels,City of Brussels,2026-03-01,2026-03-01,Grand Theater,Grand Theater,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
 City of Brussels,0.6265996098518372,science,Brussels,City of Brussels,2025-10-15,2025-10-15,Downtown Exhibition Center,Downtown Exhibition Center,"456 Elm St, Othertown","456 Elm St, Othertown",5000,5000
 Lisbon,0.6407251358032227,science,Lisbon,Lisbon,2026-02-14,2026-02-14,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown","123 Main St, Anytown",500,500
 Lisbon,0.6522148847579956,cultural,Lisbon,Lisbon,2026-03-01,2026-03-01,Main Street Conference Venue,Main Street Conference Venue,"789 Oak St, Sometown","789 Oak St, Sometown",1000,1000
@@ -93,7 +93,7 @@ Prague,0.7171330451965332,cultural,Prague,Prague,2026-02-14,2026-02-14,Downtown 
 Prague,0.6861834526062012,science,Prague,Prague,2025-12-05,2025-12-05,Downtown Exhibition Center,Downtown Exhibition Center,"789 Oak St, Sometown","789 Oak St, Sometown",3000,3000
 Prague,0.6711216568946838,science,Prague,Prague,2025-10-15,2025-10-15,Main Street Conference Venue,Main Street Conference Venue,"789 Oak St, Sometown","789 Oak St, Sometown",500,500
 Reykjavík,0.7154638767242432,science,Reykjavík,Reykjavík,2026-01-10,2026-01-10,Central Park Amphitheater,Central Park Amphitheater,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
-Reykjavík,0.7026737928390503,science,Reykjavík,Reykjavík,2025-12-05,2025-12-05,Downtown Exhibition Center,Downtown Exhibition Center,"123 Main St, Anytown","123 Main St, Anytown",2000,2000
+Reykjavík,0.7026737928390503,science,Reykjavik,Reykjavík,2025-12-05,2025-12-05,Downtown Exhibition Center,Downtown Exhibition Center,"123 Main St, Anytown","123 Main St, Anytown",2000,2000
 Reykjavík,0.6752760410308838,cultural,Reykjavík,Reykjavík,2025-10-15,2025-10-15,Main Street Conference Venue,Main Street Conference Venue,"456 Elm St, Othertown","456 Elm St, Othertown",5000,5000
 Sarajevo,0.7212903499603271,cultural,Sarajevo,Sarajevo,2026-03-01,2026-03-01,Grand Theater,Grand Theater,"789 Oak St, Sometown","789 Oak St, Sometown",5000,5000
 Sarajevo,0.7119239568710327,science,Sarajevo,Sarajevo,2026-03-01,2026-03-01,Riverside Film Studio,Riverside Film Studio,"789 Oak St, Sometown","789 Oak St, Sometown",5000,5000
@@ -110,7 +110,7 @@ Vilnius,0.6339418292045593,cultural,Vilnius,Vilnius,2025-11-20,2025-11-20,Centra
 Warsaw,0.6278042197227478,cultural,Warsaw,Warsaw,2026-01-10,2026-01-10,City Concert Hall,City Concert Hall,"123 Main St, Anytown","123 Main St, Anytown",1000,1000
 Warsaw,0.615079402923584,cultural,Warsaw,Warsaw,2026-01-10,2026-01-10,Central Park Amphitheater,Central Park Amphitheater,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
 Warsaw,0.6279156804084778,science,Warsaw,Warsaw,2025-11-20,2025-11-20,Main Street Conference Venue,Main Street Conference Venue,"456 Elm St, Othertown","456 Elm St, Othertown",1000,1000
-Zagreb,0.7103341817855835,science,Zagreb,Zagreb,2026-02-14,2026-02-14,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown","123 Main St, Anytown",10000,10000
+Zagreb,0.7103341817855835,science,Zagreb,Zagreb,2026-02-14,2026-02-14,Main Street Conference Venue,Main Street Conference Venue,"123 Main St, Anytown,","123 Main St, Anytown",10000,10000
 Zagreb,0.6875765919685364,science,Zagreb,Zagreb,2025-10-15,2025-10-15,Downtown Exhibition Center,Downtown Exhibition Center,"456 Elm St, Othertown","456 Elm St, Othertown",10000,10000
 Zagreb,0.6872603297233582,cultural,Zagreb,Zagreb,2026-02-14,2026-02-14,Downtown Exhibition Center,Downtown Exhibition Center,"456 Elm St, Othertown","456 Elm St, Othertown",3000,3000
 Budapest,0.6864751577377319,cultural,Budapest,Budapest,2025-11-20,2025-11-20,Downtown Exhibition Center,Downtown Exhibition Center,"123 Main St, Anytown","123 Main St, Anytown",500,500

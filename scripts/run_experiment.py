@@ -31,7 +31,7 @@ from pathlib import Path
 
 def run_sparql_query(config, out_dir):
     """Run the SPARQL query for a given configuration and measure execution time."""
-    query_file = "queries/cultural/city-event-extract.sparql"
+    query_file = "queries/cultural/mixed-event-extract.sparql"
     output_csv = out_dir / "search.csv"
     results_file = out_dir / "execution_time.txt"
     executed_query_file = out_dir / "executed_query.sparql"  # File to save the executed query

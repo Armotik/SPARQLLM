@@ -1,4 +1,4 @@
-# slm-run --config config.ini -f queries/cultural/city-event-extract.sparql --debug
+# slm-run --config config.ini -f queries/cultural/mixed-event-extract.sparql --debug
 
 ## Use MCP FAISS provider and LLM without READFILE
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>
@@ -7,9 +7,9 @@ PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX schema: <http://schema.org/>
 PREFIX ex: <http://example.org/>
 
-SELECT ?label ?score ?city ?city_orig ?date ?date_orig ?venue ?venue_orig ?address ?address_orig ?capacity ?capacity_orig WHERE {
+SELECT ?label ?score ?type_orig ?city ?city_orig ?date ?date_orig ?venue ?venue_orig ?address ?address_orig ?capacity ?capacity_orig WHERE {
   SERVICE <https://query.wikidata.org/sparql> {
-    { SELECT * WHERE {
+    { SELECT DISTINCT ?label WHERE {
         ?country wdt:P31 wd:Q6256;  # sovereign state
                  wdt:P30 wd:Q46;   # in Europe
                  wdt:P36 ?capital. # has capital
@@ -26,8 +26,8 @@ SELECT ?label ?score ?city ?city_orig ?date ?date_orig ?venue ?venue_orig ?addre
       "faiss",
       "faiss.search_index",
       ex:SLM-OBJ(
-        "file", "./cultural-events.ttl",
-        "index_path", "./data/cultural_events_faiss",
+        "file", "./mixed-events.ttl",
+        "index_path", "./data/mixed_events_faiss",
         "query", ?rag,
         "k", 3
       )
@@ -42,6 +42,7 @@ SELECT ?label ?score ?city ?city_orig ?date ?date_orig ?venue ?venue_orig ?addre
     ?match schema:capacity ?capacity_orig .
     ?match schema:startDate ?date_orig .
     ?match schema:cityLabel ?city_orig .
+    ?match schema:type ?type_orig .
     OPTIONAL { ?match <http://example.org/score> ?score }
   }
 

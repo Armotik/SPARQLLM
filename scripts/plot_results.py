@@ -164,6 +164,134 @@ def plot_extraction_comparison(input_dir, output_dir):
     print(f"Plot saved: {output_file_fuzzy}")
 
 
+def plot_row_precision_per_model(input_dir, output_dir):
+    """Plot row_precision_pct (simple_precision) per model as a bar chart."""
+    data = []
+
+    for model_dir in Path(input_dir).iterdir():
+        if model_dir.is_dir():
+            # support multiple possible eval filenames
+            eval_file = None
+            for name in ("eval_results.json", "eval.json", "eval.jsonl"):
+                p = model_dir / name
+                if p.exists():
+                    eval_file = p
+                    break
+            if not eval_file:
+                continue
+            try:
+                with open(eval_file, "r", encoding="utf-8") as f:
+                    results = json.load(f)
+            except Exception:
+                continue
+            sp = results.get("simple_precision") or {}
+            pct = sp.get("row_precision_pct")
+            if pct is None:
+                # maybe older files store row_precision as fraction
+                rp = sp.get("row_precision")
+                if rp is not None:
+                    pct = float(rp) * 100.0
+            if pct is not None:
+                data.append({"model": model_dir.name, "row_precision_pct": float(pct)})
+
+    if not data:
+        print("No simple_precision data found for any model; skipping precision plot.")
+        return
+
+    df = pd.DataFrame(data).sort_values("row_precision_pct", ascending=False)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(df["model"], df["row_precision_pct"], color="seagreen")
+    plt.xlabel("Model")
+    plt.ylabel("Row Precision (%)")
+    plt.title("Row Precision (%) per Model")
+    plt.ylim(0, 100)
+    plt.xticks(rotation=45, ha="right")
+    plt.tight_layout()
+
+    output_file = Path(output_dir) / "row_precision_per_model.png"
+    plt.savefig(output_file)
+    print(f"Plot saved: {output_file}")
+
+
+def plot_aggregate_hit_at_k(input_dir, output_dir, ks=(1, 2, 3)):
+    """Aggregate hit@k across all model runs (all models/confounded).
+    It looks for a search CSV in each subfolder (search.csv or search_result.csv) and
+    recomputes hit@k using condition: (city_orig == label) AND (type_orig == 'cultural').
+    """
+    total_queries = 0
+    total_hits = {k: 0 for k in ks}
+
+    csv_names = ("search.csv", "search_result.csv", "search_results.csv")
+    for model_dir in Path(input_dir).iterdir():
+        if not model_dir.is_dir():
+            continue
+        # find csv file
+        csv_file = None
+        for name in csv_names:
+            p = model_dir / name
+            if p.exists():
+                csv_file = p
+                break
+        # also accept files under nested folders (e.g., out/model/search.csv)
+        if csv_file is None:
+            # try to find any csv in the folder
+            for p in model_dir.glob("*.csv"):
+                csv_file = p
+                break
+        if csv_file is None:
+            continue
+
+        try:
+            df = pd.read_csv(csv_file)
+        except Exception:
+            print(f"Warning: could not read {csv_file}")
+            continue
+
+        if df.empty or 'label' not in df.columns:
+            continue
+
+        groups = df.groupby('label')
+        n_queries = len(groups)
+        total_queries += n_queries
+
+        for label, group in groups:
+            group = group.sort_values('score', ascending=False).reset_index(drop=True)
+            # safety: lower type column
+            if 'type_orig' not in group.columns or 'city_orig' not in group.columns:
+                continue
+            cond = (group['city_orig'] == label) & (group['type_orig'].astype(str).str.lower() == 'cultural')
+            for k in ks:
+                if bool(cond.iloc[:k].any()):
+                    total_hits[k] += 1
+
+    if total_queries == 0:
+        print("No queries found across model outputs; skipping aggregate hit@k plot.")
+        return
+
+    hit_at_k = {k: total_hits[k] / total_queries for k in ks}
+
+    # Plot
+    labels = [str(k) for k in ks]
+    values = [hit_at_k[k] * 100.0 for k in ks]
+
+    plt.figure(figsize=(8, 5))
+    x = np.arange(len(labels))
+    plt.bar(x, values, color='coral')
+    for i, v in enumerate(values):
+        plt.text(i, v + 1, f"{v:.1f}%", ha='center')
+    plt.xticks(x, labels)
+    plt.ylim(0, 100)
+    plt.xlabel('k')
+    plt.ylabel('Hit@k (%) — aggregated across models')
+    plt.title('Aggregate Hit@k (city_orig==label AND type_orig==cultural)')
+    plt.tight_layout()
+
+    output_file = Path(output_dir) / 'aggregate_hit_at_k.png'
+    plt.savefig(output_file)
+    print(f"Plot saved: {output_file}")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate plots for experimental results.")
     parser.add_argument("--input-dir", required=True, help="Directory containing the results.")
@@ -177,6 +305,8 @@ def main():
     plot_execution_time(input_dir, output_dir)
     plot_recall_at_k(input_dir, output_dir)
     plot_extraction_comparison(input_dir, output_dir)
+    # plot_row_precision_per_model(input_dir, output_dir)
+    plot_aggregate_hit_at_k(input_dir, output_dir)
 
 if __name__ == "__main__":
     main()

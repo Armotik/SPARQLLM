@@ -1,0 +1,34 @@
+# Example: invoke Groq LLM via MCP tool to produce JSON-LD and query the generated graph
+# Run:
+#   slm-run --config config.ini -f queries/mcp/mcp_groq_generate_jsonld.sparql --debug
+# Parameters:
+#   - prompt: natural language instruction
+#   - optional model override
+#   - optional temperature (0..2, default 0)
+# Environment:
+#   export GROQ_API_KEY=... (must be set)
+
+PREFIX schema: <https://schema.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?name ?start ?type ?duration ?graph
+WHERE {
+  # Fallback automatique de modèle implémenté côté outil (pas besoin d'override ici)
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "groq",
+      "groq.generate_jsonld",
+      ex:SLM-OBJ(
+        "prompt", "Create a JSON-LD schema.org Event named 'Test Festival' in Nantes with startDate today and a description.",
+        "temperature", "0.2"
+      )
+    ) AS ?graph
+  )
+  GRAPH ?graph {
+    ?s a ?type ;
+       schema:name ?name ;
+       schema:startDate ?start .
+    OPTIONAL { ?graph schema:duration ?duration }
+  }
+}
+LIMIT 10

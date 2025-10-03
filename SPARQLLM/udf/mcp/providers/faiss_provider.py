@@ -41,7 +41,10 @@ logger.setLevel(logging.INFO)
 
 
 class FaissProvider:
+    # Historique du code: certaines données utilisent https://schema.org/ (avec slash final),
+    # le code original utilisait http://schema.org/. On supporte maintenant les deux.
     SCHEMA = Namespace("http://schema.org/")
+    SCHEMA_HTTPS = Namespace("https://schema.org/")
 
     def __init__(self):
         if SentenceTransformer is None or faiss is None:
@@ -51,13 +54,69 @@ class FaissProvider:
         g = Graph()
         g.parse(ttl_path, format="turtle")
         entries = []
-        for s in g.subjects(predicate=self.SCHEMA.text):
-            text = g.value(subject=s, predicate=self.SCHEMA.text)
+        text_predicates = [
+            self.SCHEMA.text,
+            self.SCHEMA_HTTPS.text,
+            self.SCHEMA.description if hasattr(self.SCHEMA, 'description') else URIRef("http://schema.org/description"),
+            self.SCHEMA_HTTPS.description if hasattr(self.SCHEMA_HTTPS, 'description') else URIRef("https://schema.org/description"),
+        ]
+        name_predicates = [
+            self.SCHEMA.name if hasattr(self.SCHEMA, 'name') else URIRef("http://schema.org/name"),
+            self.SCHEMA_HTTPS.name if hasattr(self.SCHEMA_HTTPS, 'name') else URIRef("https://schema.org/name"),
+        ]
+
+        # On collecte tous les sujets candidats ayant AU MOINS un de ces prédicats texte
+        candidate_subjects = set()
+        for tp in text_predicates:
+            for s in g.subjects(predicate=tp):
+                candidate_subjects.add(s)
+        # Si aucun prédicat 'text' trouvé, fallback sur 'description' ou 'name'
+        if not candidate_subjects:
+            for npred in name_predicates:
+                for s in g.subjects(predicate=npred):
+                    candidate_subjects.add(s)
+
+        for s in candidate_subjects:
+            text_val = None
+            # Cherche priorité: text -> description -> name (premier trouvé)
+            for tp in text_predicates:
+                tv = g.value(subject=s, predicate=tp)
+                if tv:
+                    text_val = tv
+                    break
+            if not text_val:
+                for npred in name_predicates:
+                    tv = g.value(subject=s, predicate=npred)
+                    if tv:
+                        text_val = tv
+                        break
+            if not text_val:
+                continue
             props = {str(p): str(o) for p, o in g.predicate_objects(subject=s)}
-            entries.append({"uri": str(s), "text": str(text), "props": props})
+            entries.append({"uri": str(s), "text": str(text_val), "props": props})
+
+        if not entries:
+            logger.info("No schema:text (http/https) nor description/name literals found in %s" % ttl_path)
+            # Optionnel: échantillon des prédicats disponibles pour debug
+            sample_preds = sorted({str(p) for _, p, _ in list(g)[:500]})[:25]
+            logger.debug("Sample predicates: %s" % sample_preds)
+        else:
+            logger.info("Extracted %d text entries from %s" % (len(entries), ttl_path))
         return entries
 
-    def tool_index_file(self, file: str, model: str = "all-MiniLM-L6-v2", index_path: str | None = None, persist: bool = False, normalize: bool = True) -> dict:
+    def tool_index_file(
+        self,
+        file: str,
+        model: str = "all-MiniLM-L6-v2",
+        index_path: str | None = None,
+        persist: bool = False,
+        normalize: bool = True,
+        index_type: str = "flat",
+        metric: str = "ip",
+        hnsw_M: int = 32,
+        hnsw_ef_construction: int = 200,
+        hnsw_ef_search: int = 50,
+    ) -> dict:
         """Index TTL file into FAISS.
 
         Args:
@@ -66,11 +125,16 @@ class FaissProvider:
             index_path: optional path to write faiss index and metadata (without extension)
             persist: whether to persist index and metadata to disk
             normalize: normalize embeddings (recommended for IndexFlatIP)
+            index_type: 'flat' or 'hnsw'
+            metric: 'ip', 'l2', or 'cosine' (cosine mapped to normalized IP)
+            hnsw_M: HNSW graph degree (M)
+            hnsw_ef_construction: HNSW efConstruction parameter
+            hnsw_ef_search: initial efSearch parameter stored in metadata (can be overridden at query time)
 
         Returns:
             dict: JSON-like contract with media_type and jsonld
         """
-        logger.info("Indexing file %s (model=%s)" % (file, model))
+        logger.info("Indexing file %s (model=%s, index_type=%s, metric=%s)" % (file, model, index_type, metric))
         if SentenceTransformer is None:
             return {"error": "missing_dependency", "message": "Install sentence-transformers and faiss"}
         if not os.path.exists(file):
@@ -85,10 +149,58 @@ class FaissProvider:
         emb = model_obj.encode(texts, normalize_embeddings=normalize)
         emb = np.array(emb, dtype='float32')
         dim = emb.shape[1]
-        index = faiss.IndexFlatIP(dim)
+
+        index_type_norm = index_type.lower()
+        metric_norm = metric.lower()
+
+        # Choose FAISS index
+        # Flat IP (original behavior) OR HNSW variants. For cosine, we normalize embeddings and treat as IP or L2 depending.
+        # We use index_factory for HNSW to allow IP vs L2 easily.
+        if index_type_norm == 'flat':
+            if metric_norm in ('ip', 'cosine'):
+                index = faiss.IndexFlatIP(dim)
+                effective_metric = 'ip'
+            else:
+                index = faiss.IndexFlatL2(dim)
+                effective_metric = 'l2'
+        elif index_type_norm == 'hnsw':
+            # Build string for factory: e.g. HNSW32,IP or HNSW32
+            hnsw_descr = f"HNSW{hnsw_M}"
+            if metric_norm in ('ip', 'cosine'):
+                hnsw_descr += ",IP"
+                effective_metric = 'ip'
+            else:
+                effective_metric = 'l2'
+            try:
+                index = faiss.index_factory(dim, hnsw_descr)
+            except Exception as e:
+                return {"error": "hnsw_build_failed", "message": str(e), "descriptor": hnsw_descr}
+            # Tune HNSW hyper-parameters if available
+            if hasattr(index, 'hnsw'):
+                try:
+                    index.hnsw.efConstruction = int(hnsw_ef_construction)
+                    index.hnsw.efSearch = int(hnsw_ef_search)
+                except Exception:
+                    pass
+        else:
+            return {"error": "unsupported_index_type", "index_type": index_type}
+
         index.add(emb)
 
-        meta = {"entries": [{"uri": e["uri"], "props": e["props"]} for e in entries], "model": model, "count": len(entries)}
+        meta = {
+            "entries": [{"uri": e["uri"], "props": e["props"]} for e in entries],
+            "model": model,
+            "count": len(entries),
+            "index_type": index_type_norm,
+            "metric": effective_metric,
+            "normalize": bool(normalize),
+        }
+        if index_type_norm == 'hnsw':
+            meta.update({
+                "hnsw_M": int(hnsw_M),
+                "hnsw_ef_construction": int(hnsw_ef_construction),
+                "hnsw_ef_search": int(hnsw_ef_search)
+            })
 
         if persist:
             if not index_path:
@@ -105,16 +217,26 @@ class FaissProvider:
             with open(meta_file, 'w', encoding='utf-8') as fh:
                 json.dump(meta, fh, ensure_ascii=False, indent=2)
             logger.info("Persisted index to %s and metadata to %s" % (idx_file, meta_file))
-            jsonld = {"@context": {"schema": str(self.SCHEMA)}, "@type": "FaissIndex", "index_path": idx_file, "meta_path": meta_file, "count": len(entries)}
+            jsonld = {"@context": {"schema": str(self.SCHEMA)}, "@type": "FaissIndex", "index_path": idx_file, "meta_path": meta_file, "count": len(entries), "index_type": index_type_norm, "metric": meta.get('metric')}
             return {"media_type": "application/ld+json", "jsonld": jsonld, "graph_anchor": idx_file}
 
         # In-memory return: not persisted, but provide metadata in payload
-        jsonld = {"@context": {"schema": str(self.SCHEMA)}, "@type": "FaissIndex", "index_in_memory": True, "count": len(entries)}
+        jsonld = {"@context": {"schema": str(self.SCHEMA)}, "@type": "FaissIndex", "index_in_memory": True, "count": len(entries), "index_type": index_type_norm, "metric": meta.get('metric')}
         # Attach small sample metadata (uris)
         jsonld["uris"] = [e["uri"] for e in entries]
         return {"media_type": "application/ld+json", "jsonld": jsonld, "graph_anchor": file}
 
-    def tool_search_index(self, index_path: str | None, query: str, k: int = 5, model: str = "all-MiniLM-L6-v2", file: str | None = None) -> dict:
+    def tool_search_index(
+        self,
+        index_path: str | None,
+        query: str,
+        k: int = 5,
+        model: str = "all-MiniLM-L6-v2",
+        file: str | None = None,
+        index_type: str | None = None,
+        metric: str | None = None,
+        hnsw_ef_search: int | None = None,
+    ) -> dict:
         """Search a persisted FAISS index.
 
         Args:
@@ -143,7 +265,14 @@ class FaissProvider:
         # If index missing but a TTL file is provided, build and persist it first
         if (not os.path.exists(idx_file) or not os.path.exists(meta_file)) and file:
             logger.info("Index not found, creating index from file %s" % file)
-            res = self.tool_index_file(file=file, model=model, index_path=index_path, persist=True)
+            res = self.tool_index_file(
+                file=file,
+                model=model,
+                index_path=index_path,
+                persist=True,
+                index_type=index_type or 'flat',
+                metric=metric or 'ip'
+            )
             if res.get('error'):
                 return {"error": "index_build_failed", "cause": res}
 
@@ -160,16 +289,32 @@ class FaissProvider:
             meta = json.load(fh)
 
         model_obj = SentenceTransformer(model)
-        q_emb = model_obj.encode([query], normalize_embeddings=True)
+        # If metadata indicates embeddings were normalized originally, we do the same now.
+        normalize_flag = bool(meta.get('normalize', True))
+        q_emb = model_obj.encode([query], normalize_embeddings=normalize_flag)
         q_emb = np.array(q_emb, dtype='float32')
         D, I = index.search(q_emb, k)
 
+        # If HNSW and user provided an override for efSearch, attempt to set then re-run search
+        if hnsw_ef_search and hasattr(index, 'hnsw'):
+            try:
+                index.hnsw.efSearch = int(hnsw_ef_search)
+                D, I = index.search(q_emb, k)
+            except Exception:
+                pass
+
         matches = []
-        for score, idx in zip(D[0].tolist(), I[0].tolist()):
+        metric_type = meta.get('metric', 'ip')
+        for raw_score, idx in zip(D[0].tolist(), I[0].tolist()):
             if idx < 0 or idx >= len(meta.get('entries', [])):
                 continue
             entry = meta['entries'][idx]
-            matches.append({"uri": entry.get('uri'), "score": float(score), "props": entry.get('props')})
+            # Convert distance to a score if L2 (smaller distance => better). We keep consistency: higher score is better.
+            if metric_type == 'l2':
+                score = -float(raw_score)
+            else:
+                score = float(raw_score)
+            matches.append({"uri": entry.get('uri'), "score": score, "props": entry.get('props')})
 
         # Build RDF-ready JSON-LD with @graph: one main result node linking to match nodes
         try:
@@ -212,8 +357,8 @@ class FaissProvider:
     # registry
     def list_tools(self) -> List[Dict[str, Any]]:
         return [
-            {"name": "faiss.index_file", "description": "Index a TTL file into FAISS", "inputs": ["file","model","index_path","persist"]},
-            {"name": "faiss.search_index", "description": "Search a persisted FAISS index (or provide file to auto-build)", "inputs": ["index_path","file","query","k","model"]},
+            {"name": "faiss.index_file", "description": "Index a TTL file into FAISS (flat or HNSW)", "inputs": ["file","model","index_path","persist","normalize","index_type","metric","hnsw_M","hnsw_ef_construction","hnsw_ef_search"]},
+            {"name": "faiss.search_index", "description": "Search a persisted FAISS index (or provide file to auto-build)", "inputs": ["index_path","file","query","k","model","index_type","metric","hnsw_ef_search"]},
         ]
 
     def call(self, tool_name: str, args: dict) -> dict:
@@ -222,7 +367,13 @@ class FaissProvider:
                 file=args.get('file'),
                 model=args.get('model','all-MiniLM-L6-v2'),
                 index_path=args.get('index_path'),
-                persist=bool(args.get('persist', False))
+                persist=bool(args.get('persist', False)),
+                normalize=bool(args.get('normalize', True)),
+                index_type=args.get('index_type','flat'),
+                metric=args.get('metric','ip'),
+                hnsw_M=int(args.get('hnsw_M',32)),
+                hnsw_ef_construction=int(args.get('hnsw_ef_construction',200)),
+                hnsw_ef_search=int(args.get('hnsw_ef_search',50)),
             )
         if tool_name == "faiss.search_index":
             return self.tool_search_index(
@@ -230,7 +381,10 @@ class FaissProvider:
                 query=args.get('query',''),
                 k=int(args.get('k',5)),
                 model=args.get('model','all-MiniLM-L6-v2'),
-                file=args.get('file')
+                file=args.get('file'),
+                index_type=args.get('index_type'),
+                metric=args.get('metric'),
+                hnsw_ef_search=args.get('hnsw_ef_search')
             )
         return {"error": "unknown_tool", "tool": tool_name}
 

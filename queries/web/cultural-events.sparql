@@ -17,7 +17,7 @@ PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX slm: <http://example.org/>
 PREFIX ex: <http://example.org/>
 
-SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
+SELECT ?capitalLabel ?url ?requestedModel ?finalModel ?eventName ?eventDate ?score ?durSearch ?durSnap ?durLLM WHERE {
   # 1) European capitals
   SERVICE <https://query.wikidata.org/sparql> {
     SELECT ?capital ?capitalLabel WHERE {
@@ -49,7 +49,8 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
     ?item a schema:DataFeedItem ;  schema:item ?page .
     ?page a schema:WebPage  .
     BIND(STR(?page) AS ?url)
-    OPTIONAL { ?item schema:position ?pos }
+    OPTIONAL { ?item schema:position ?score }
+    OPTIONAL { ?gSearch schema:duration ?durSearch }
   }
 
   # 3) Snapshot (short text, redaction)
@@ -68,6 +69,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
 
   GRAPH ?gSnap {
     ?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text .
+    OPTIONAL { ?gSnap schema:duration ?durSnap }
   }
 
   # 4) LLM extraction (GROQ) to JSON-LD Event { name, startDate }
@@ -85,23 +87,40 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?score WHERE {
     Text (English):
     <page>
     """,
-    SUBSTR(?text,1,1800),
+    SUBSTR(?text,1,3000),
     """
     </page>
     """
   ) AS ?prompt)
 
-  BIND(ex:SLM-LLMGRAPH_GROQ(?prompt, ?url) AS ?gLLM)
+  # Liste des modèles à tester (modèle demandé). Adapter selon disponibilité.
+  VALUES ?requestedModel {
+    "openai/gpt-oss-20b"
+#    "llama-3.1-8b-instant"
+    "llama-3.3-70b-versatile"
+    "openai/gpt-oss-120b"
+  }
+
+  # Appel LLM via interface MCP Groq pour chaque modèle demandé
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "groq",
+      "groq.generate_jsonld",
+      ex:SLM-OBJ(
+        "prompt", ?prompt,
+        "model", ?requestedModel,
+        "temperature", "0.0"
+      )
+    ) AS ?gLLM
+  )
 
   GRAPH ?gLLM {
     ?root a schema:Event ;
           schema:name ?eventName ;
           schema:startDate ?eventDate .
+    OPTIONAL { ?gLLM schema:duration ?durLLM }
+    OPTIONAL { <http://example.org/GROK> <http://example.org/final_model> ?finalModel }
   }
 
-  # Optional score (position) from DuckDuckGo
-  OPTIONAL {
-    GRAPH ?gSearch { ?item schema:position ?score }
-  }
 }
 ORDER BY ?capitalLabel ?score

@@ -1,0 +1,68 @@
+# slm-run --config config.ini -f queries/cultural/mixed-event.sparql --debug
+
+## Use MCP FAISS provider and LLM without READFILE
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX schema: <http://schema.org/>
+PREFIX ex: <http://example.org/>
+
+
+#### Aggregated precision: count how many rows satisfy (?label = ?city_orig) AND (type_orig = 'cultural')
+### This SELECT runs over the results produced by the query above (GRAPH ?gf) and computes:
+### - ?numCorrect : number of rows matching the condition
+### - ?totalRows  : total number of result rows
+### - ?precision  : ratio (numCorrect / totalRows)
+SELECT ?keyword
+  (SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) AS ?numCorrect)
+  (COUNT(?label) AS ?totalRows)
+  ((SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) / COUNT(?label)) AS ?precision)
+WHERE {
+  # Re-run the same graph extraction to aggregate over all matches
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT DISTINCT ?label WHERE {
+        ?country wdt:P31 wd:Q6256;  # sovereign state
+                 wdt:P30 wd:Q46;   # in Europe
+                 wdt:P36 ?capital. # has capital
+        ?capital rdfs:label ?label.
+        FILTER(LANG(?label) = "en")
+      } ORDER BY ?label  # LIMIT 1
+    }
+  }
+  {
+    SELECT DISTINCT ?keyword  WHERE {
+      VALUES ?keyword {
+        "concert"
+        "performance"
+        "festival"
+        "exhibition"
+        "conference"
+        "film screening"
+        "cultural event"
+      }
+    } # ORDER BY RAND() LIMIT 6
+  }
+  BIND(CONCAT("I want  ", STR(?keyword), " event that are located in ", STR(?label)) AS ?rag)
+
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.search_index",
+      ex:SLM-OBJ(
+        "file", "./mixed-events.ttl",
+        "index_path", "./data/mixed_events_faiss",
+        "query", ?rag,
+        "k", 3
+      )
+    ) AS ?gf
+  )
+
+  GRAPH ?gf {
+    ?match schema:cityLabel ?city_orig ;
+     schema:type ?type_orig ;
+     ex:score ?score 
+    filter(?score>0.65)
+  }
+
+  FILTER(BOUND(?label) && BOUND(?city_orig) && BOUND(?type_orig))
+} GROUP BY ?keyword

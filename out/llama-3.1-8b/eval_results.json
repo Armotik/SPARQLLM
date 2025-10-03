@@ -1,18 +1,33 @@
 {
   "retrieval": {
     "recall_at_k": {
-      "1": 0.025,
-      "2": 0.025,
-      "3": 0.025
+      "1": 0.975,
+      "2": 0.975,
+      "3": 0.975
     },
-    "mrr": 0.0003333333333333334
+    "mrr": 0.975
+  },
+  "hit": {
+    "hit_at_k": {
+      "1": 0.65,
+      "2": 0.85,
+      "3": 1.0
+    },
+    "hit_definition": "city_orig == label AND type_orig == 'cultural'"
   },
   "extraction": {
     "date_exact": 1.0,
     "capacity_exact": 1.0,
-    "venue_above_threshold": 0.9603174603174603,
-    "address_above_threshold": 0.4603174603174603,
-    "venue_mean_fuzzy": 96.42206609419725,
-    "address_mean_fuzzy": 82.78289810547875
+    "venue_above_threshold": 1.0,
+    "address_above_threshold": 1.0,
+    "venue_mean_fuzzy": 100.0,
+    "address_mean_fuzzy": 100.0
+  },
+  "simple_precision": {
+    "row_precision": 0.5583333333333333,
+    "row_precision_pct": 55.833333333333336,
+    "city_full_precision": 0.05,
+    "city_at_least1": 1.0,
+    "definition": "(label == city_orig AND type_orig == 'cultural')"
   }
 }

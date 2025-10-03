@@ -1,0 +1,54 @@
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX schema: <http://schema.org/>
+PREFIX ex: <http://example.org/>
+
+#### Aggregated precision: count how many rows satisfy (?label = ?city_orig) AND (type_orig = 'cultural')
+### This SELECT computes:
+### - ?numCorrect : number of rows matching the condition
+### - ?totalRows  : total number of result rows
+### - ?precision  : ratio (numCorrect / totalRows)
+SELECT
+  (SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) AS ?numCorrect)
+  (COUNT(?label) AS ?totalRows)
+  ((SUM(IF((STR(?label) = STR(?city_orig) && LCASE(STR(?type_orig)) = "cultural"), 1, 0)) / COUNT(?label)) AS ?precision)
+WHERE {
+  SERVICE <https://query.wikidata.org/sparql> {
+    { SELECT DISTINCT ?label WHERE {
+        ?country wdt:P31 wd:Q6256;  # sovereign state
+                 wdt:P30 wd:Q46;   # in Europe
+                 wdt:P36 ?capital. # has capital
+        ?capital rdfs:label ?label.
+        FILTER(LANG(?label) = "en")
+      } LIMIT 100 }
+  }
+
+  BIND(CONCAT("I want  cultural events  that are located in ", STR(?label)) AS ?rag)
+
+  BIND(
+    ex:SLM-MCP-TOOL(
+      "faiss",
+      "faiss.search_index",
+      ex:SLM-OBJ(
+        "file", "./mixed-events.ttl",
+        "index_path", "./data/mixed_events_faiss",
+        "query", ?rag,
+        "k", 3
+      )
+    ) AS ?gf
+  )
+
+  GRAPH ?gf {
+    ?match schema:text ?textVal .
+    ?match schema:venue ?venue_orig .
+    ?match schema:address ?address_orig .
+    ?match schema:capacity ?capacity_orig .
+    ?match schema:startDate ?date_orig .
+    ?match schema:cityLabel ?city_orig .
+    ?match schema:type ?type_orig .
+    OPTIONAL { ?match <http://example.org/score> ?score }
+  }
+
+  FILTER(BOUND(?label) && BOUND(?city_orig) && BOUND(?type_orig))
+}
