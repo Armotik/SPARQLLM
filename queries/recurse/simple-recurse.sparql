@@ -1,17 +1,16 @@
 # Simple recursive query example
 # Run with:
-# slm-run --config config.ini -f queries/simple-recurse.sparql --debug
+# slm-run --config config.ini -f queries/recurse/simple-recurse.sparql --debug
 
 PREFIX ex: <http://example.org/>
-PREFIX ggf: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 
 SELECT ?s ?p ?o  WHERE {
   BIND(ggf:SLM-GRAPH("""
     PREFIX ex: <http://example.org/>
     ex:a ex:linkedTo ex:b .
     ex:b ex:linkedTo ex:c .
-    ex:c ex:linkedTo ex:d .
-    ex:d ex:linkedTo ex:a .
+    ex:c ex:linkedTo ex:a .
   """) AS ?ginit)
 
   BIND("""

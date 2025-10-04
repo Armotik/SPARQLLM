@@ -340,14 +340,14 @@ def slm_mcp_tool(handle: str,
             _attach_prov(named_graph, graph_uri, handle, tool_name, args, source_hint,
                          start_dt=_call_start_dt, end_dt=_call_end_dt, duration_s=_duration)
             print("Named graph has", len(named_graph), "triples")
-            # Affichage optionnel des prédicats distincts (debug)
-            # try:
-            #     preds = sorted({str(p) for (_, p, _) in named_graph})
-            #     print(f"Distinct predicates ({len(preds)}):")
-            #     for pr in preds:
-            #         print("  -", pr)
-            # except Exception as _pred_err:
-            #     logger.debug(f"[MCP] Unable to list distinct predicates: {_pred_err}")
+#            Affichage optionnel des prédicats distincts (debug)
+            try:
+                preds = sorted({str(p) for (_, p, _) in named_graph})
+                print(f"Distinct predicates ({len(preds)}):")
+                for pr in preds:
+                    print("  -", pr)
+            except Exception as _pred_err:
+                logger.debug(f"[MCP] Unable to list distinct predicates: {_pred_err}")
             #for t in named_graph: print(f"triple:", t)
             return graph_uri
 

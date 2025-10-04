@@ -1,12 +1,12 @@
 # run with 
-# slm-run --config config.ini -f queries/tape_update.sparql --debug
+# slm-run --config config.ini -f queries/recurse/tape_update.sparql --debug
 
 PREFIX ex: <http://example.org/>
+prefix ggf: <http://ggf.org/>
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT ?head ?cell ?new_value ?state WHERE {
-  BIND(ex:SLM-FILE("./data/tape.trig") AS ?uri)
-  BIND(ex:SLM-RDF(?uri,"turtle") AS ?tape)
+  BIND(ggf:LOAD("./data/tape.trig") AS ?tape)
   BIND("""
     PREFIX ex: <http://example.org/>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -17,8 +17,7 @@ SELECT ?head ?cell ?new_value ?state WHERE {
     INSERT {
       ex:head ex:at ?next_cell .
       ex:head ex:state ?new_state .
-      ?cell ex:value ?new_value . 
-      ?cell ex:tagada ?new_value . }
+      ?cell ex:value ?new_value .  }
     WHERE {
       ex:head ex:at ?cell ;
               ex:state ?current_state .
@@ -33,15 +32,14 @@ SELECT ?head ?cell ?new_value ?state WHERE {
     } 
   """ AS ?query_str)
 
-  BIND(ex:SLM-RECURSE-UPDATE(?query_str, ?tape) AS ?final_graph)
+  BIND(ggf:RECURSE-UPDATE(?query_str, ?tape,10) AS ?final_graph)
 
   GRAPH ?final_graph { 
     {
        ex:head ex:at ?head .
        ex:head ex:state ?state .
     } union {
-      ?cell ex:value ?new_value .#coalesce
-#      ?cell ex:tagada ?tagada
+      ?cell ex:value ?new_value .
     }
 
   }   

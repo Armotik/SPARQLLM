@@ -44,7 +44,7 @@ class ConfigSingleton:
                 func = getattr(module, func_name)
         #        func = globals().get(func_name)
                 if callable(func):
-                    full_uri= f"http://example.org/{uri}"
+                    full_uri= f"http://ggf.org/{uri}"
                     logger.debug(f"Registering {func_name} with URI {full_uri}")
                     register_custom_function(URIRef(full_uri), func)
                     cls._reg_functions.append(full_uri)

@@ -14,62 +14,44 @@ PREFIX wikibase: <http://wikiba.se/ontology#>
 PREFIX bd: <http://www.bigdata.com/rdf#>
 PREFIX schema: <https://schema.org/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX slm: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 PREFIX ex: <http://example.org/>
 
-SELECT ?capitalLabel ?url ?requestedModel ?finalModel ?eventName ?eventDate ?score ?durSearch ?durSnap ?durLLM WHERE {
+SELECT ?capitalLabel ?url ?eventName ?eventDate ?pos 
+#?durSearch ?durSnap ?durLLM 
+WHERE {
   # 1) European capitals
   SERVICE <https://query.wikidata.org/sparql> {
-    SELECT ?capital ?capitalLabel WHERE {
+    SELECT DISTINCT ?capitalLabel WHERE {
       ?country wdt:P31 wd:Q6256 ;        # instance of country
                wdt:P30 wd:Q46 ;          # continent Europe
                wdt:P36 ?capital .        # has capital
       ?capital rdfs:label ?capitalLabel .
       FILTER(LANG(?capitalLabel) = "en")
-    }
-    LIMIT 5
+    } ORDER BY ?capitalLabel  LIMIT 5
   }
 
   # 2) DuckDuckGo: search cultural events
   BIND(CONCAT("cultural event ", STR(?capitalLabel)) AS ?keywords)
-  BIND(
-    ex:SLM-MCP-TOOL(
-      "duckduckgo","duckduckgo.search",
-      ex:SLM-OBJ(
-        "query", ?keywords,
-        "limit", 3,
-        "region", "us-en",
-        "safesearch", "moderate"
-      )
-    ) AS ?gSearch
-  )
+  # Alias SEARCH encapsule duckduckgo.search (défauts: limit=3, region="us-en", safesearch="moderate")
+  BIND(ggf:SEARCH(?keywords,3) AS ?gSearch)
 
   GRAPH ?gSearch {
     ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
     ?item a schema:DataFeedItem ;  schema:item ?page .
     ?page a schema:WebPage  .
     BIND(STR(?page) AS ?url)
-    OPTIONAL { ?item schema:position ?score }
-    OPTIONAL { ?gSearch schema:duration ?durSearch }
+    OPTIONAL { ?item schema:position ?pos }
+#    ?gSearch schema:duration ?durSearch 
   }
 
   # 3) Snapshot (short text, redaction)
-  BIND(
-    ex:SLM-MCP-TOOL(
-      "browser","browser.snapshot",
-      ex:SLM-OBJ(
-        "url", ?url,
-        "wait_ms", 500,
-        "text_max", 3000,
-        "snippet_only", true,
-        "redact_pi", true
-      )
-    ) AS ?gSnap
-  )
+  # Alias SNAP encapsule browser.snapshot (défauts: wait_ms=500, text_max=3000, snippet_only=true, redact_pi=true)
+  BIND(ggf:SNAP(?url) AS ?gSnap)
 
   GRAPH ?gSnap {
     ?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text .
-    OPTIONAL { ?gSnap schema:duration ?durSnap }
+#    ?gSnap schema:duration ?durSnap 
   }
 
   # 4) LLM extraction (GROQ) to JSON-LD Event { name, startDate }
@@ -95,32 +77,21 @@ SELECT ?capitalLabel ?url ?requestedModel ?finalModel ?eventName ?eventDate ?sco
 
   # Liste des modèles à tester (modèle demandé). Adapter selon disponibilité.
   VALUES ?requestedModel {
-    "openai/gpt-oss-20b"
+#    "openai/gpt-oss-20b"
 #    "llama-3.1-8b-instant"
     "llama-3.3-70b-versatile"
-    "openai/gpt-oss-120b"
+#    "openai/gpt-oss-120b"
   }
 
-  # Appel LLM via interface MCP Groq pour chaque modèle demandé
-  BIND(
-    ex:SLM-MCP-TOOL(
-      "groq",
-      "groq.generate_jsonld",
-      ex:SLM-OBJ(
-        "prompt", ?prompt,
-        "model", ?requestedModel,
-        "temperature", "0.0"
-      )
-    ) AS ?gLLM
-  )
+  # LLM extraction via alias function (wrapper around MCP Groq tool)
+  BIND(ggf:LLM(?prompt, ?requestedModel, 0.0) AS ?gLLM)
 
   GRAPH ?gLLM {
     ?root a schema:Event ;
           schema:name ?eventName ;
           schema:startDate ?eventDate .
-    OPTIONAL { ?gLLM schema:duration ?durLLM }
-    OPTIONAL { <http://example.org/GROK> <http://example.org/final_model> ?finalModel }
+#   ?gLLM schema:duration ?durLLM 
   }
 
 }
-ORDER BY ?capitalLabel ?score
+ORDER BY ?capitalLabel ?pos
