@@ -1,0 +1,5 @@
+head,cell,newvalue,state
+http://example.org/c2,,,q0
+,http://example.org/c1,1,
+,http://example.org/c0,0,
+,http://example.org/c2,\_,

@@ -1,9 +1,12 @@
 ## Alias of city-events-faiss-llm.sparql
-# This file mirrors the content to match the expected naming.
+## run with:
+## slm-run --config config.ini -f queries/faiss/city-event-faiss-llm.sparql --debug
+
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>
 PREFIX ex: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 
 SELECT ?label ?chunk ?score ?date ?name ?gf ?gl ?uri WHERE {
   SERVICE <https://query.wikidata.org/sparql> {
@@ -17,7 +20,7 @@ SELECT ?label ?chunk ?score ?date ?name ?gf ?gl ?uri WHERE {
   }
 
   BIND(CONCAT("I want a cultural event related to cinema that is located in ", STR(?label)) AS ?rag)
-  BIND(ex:SLM-SEARCH-FAISS(?rag, ?capital, 3) AS ?gf)
+  BIND(ggf:SLM-SEARCH-FAISS(?rag, ?capital, 3) AS ?gf)
 
   GRAPH ?gf {
     ?capital ex:is_aligned_with ?bn .
@@ -26,7 +29,7 @@ SELECT ?label ?chunk ?score ?date ?name ?gf ?gl ?uri WHERE {
     ?bn ex:has_score ?score .
   }
 
-  BIND(ex:SLM-READFILE(?uri) AS ?page)
+  BIND(ggf:SLM-READFILE(?uri) AS ?page)
   BIND(CONCAT("""
 We consider a type Event with the following properties:
   <http://schema.org/StartDate> : The start date of the event
@@ -40,7 +43,7 @@ this format replacing the 0 with the date of the event, and 1 with the name of t
  "http://schema.org/name": "1",
 <page>""", STR(?page), "</page>") AS ?prompt)
 
-  BIND(ex:SLM-LLMGRAPH_OLLA(?prompt, ?uri) AS ?gl)
+  BIND(ggf:SLM-LLMGRAPH_OLLA(?prompt, ?uri) AS ?gl)
   GRAPH ?gl {
     ?uri <http://example.org/has_schema_type> ?root .
     ?root a <http://schema.org/Event> .

@@ -1,10 +1,11 @@
-# slm-run --config config.ini -f queries/simple-groq.sparql --debug
+# slm-run --config config.ini -f queries/LLM/simple_llm.sparql --debug
 
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>  
 PREFIX ex: <http://example.org/>
-PREFIX schema: <http://schema.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX ggf: <http://ggf.org/>
 
 SELECT * {
     BIND("""From the text :
@@ -16,17 +17,17 @@ SELECT * {
 
     Return *ONLY* a JSON-LD object of type `Event` in the following format:
     {
-      "@context": "http://schema.org/",
+      "@context": "https://schema.org/",
       "@type": "Event",
       "startDate": "2025-01-01",
       "city": "simple city name"
     }
     """ AS ?prompt)
     BIND(<http://example.org/e1> AS ?uri)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
+    BIND(ggf:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
      GRAPH ?g {
-        ?uri ex:has_schema_type ?bn . 
-        ?root a schema:Event. 
+#        ?uri ex:has_schema_type ?bn . 
+#        ?root a schema:Event. 
         ?root schema:startDate ?date.
         ?root schema:city ?city
         FILTER(?city = "Portoroz") 

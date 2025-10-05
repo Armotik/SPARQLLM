@@ -1,11 +1,11 @@
-# run with slm-run --config config.ini -f queries/ReadDir.sparql --debug
+# run with slm-run --config config.ini -f queries/filesystem/ReadDir.sparql --debug
 
-
+PREFIX ggf: <http://ggf.org/>
 PREFIX ex: <http://example.org/>
 SELECT ?s ?root ?g ?p1 ?t1 ?s1 ?p2 ?t2 ?p3 ?t3
 WHERE {
-    BIND(URI(ex:SLM-FILE("./SPARQLLM")) AS ?root)
-    BIND(ex:SLM-READDIR(?root,?root) AS ?g)
+    BIND(URI(ggf:SLM-FILE("./SPARQLLM")) AS ?root)
+    BIND(ggf:SLM-READDIR(?root,?root) AS ?g)
     GRAPH ?g {
         ?root ex:has_path ?p1 .
         ?p1 ex:has_type ?t1.

@@ -1,10 +1,11 @@
 # run with
-# slm-run --config config.ini -f queries/simple-csv.sparql --debug
+# slm-run --config config.ini -f queries/filesystem/simple-csv.sparql --debug
+PREFIX ggf: <http://ggf.org/>
 PREFIX ex: <http://example.org/>
 SELECT * WHERE {
-    BIND(ex:SLM-FILE("./data/results.csv") as ?value)
-    BIND(ex:SLM-CSV(?value) AS ?g)
+    BIND(ggf:SLM-FILE("./data/results.csv") as ?value)
+    BIND(ggf:SLM-CSV(?value) AS ?g)
     graph ?g {
-        ?x <http://example.org/city> ?z .
+        ?x ex:city ?z .
     }
 }

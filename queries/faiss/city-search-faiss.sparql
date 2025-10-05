@@ -1,11 +1,12 @@
 ## run with 
 ## synthetic data should be created first
-## slm-run --config config.ini -f queries/city-search-faiss.sparql --debug
+## slm-run --config config.ini -f queries/faiss/city-search-faiss.sparql --debug
 ##
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>  
 PREFIX ex: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 
 SELECT ?label ?score ?source ?chunk WHERE {
     SERVICE <https://query.wikidata.org/sparql> {
@@ -18,7 +19,7 @@ SELECT ?label ?score ?source ?chunk WHERE {
         } 
     } 
     BIND(CONCAT("I want a cultural event related to cinema that is located in ",STR(?label)) AS ?rag)
-    BIND(ex:SLM-SEARCH-FAISS(?rag,?capital,5) AS ?g).
+    BIND(ggf:SLM-SEARCH-FAISS(?rag,?capital,5) AS ?g).
     GRAPH ?g {
         ?s ex:is_aligned_with ?bn .
         ?bn ex:has_chunk ?chunk .

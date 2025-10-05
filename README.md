@@ -1,250 +1,143 @@
-SPARQLLM proposes a new technique to access external sources during SPARQL query execution.
-It allows to easily run SPARQL query that can access Search Engines, Large Language Models, or Vector database. 
+## Overview
 
-SPARQL-LM allows to run SPARQL queries like [this one](queries/city-search-faiss-llm.sparql) that search in Wikidata, perform a Vector Search to find URIs and extract cultural events from Uris:
+This repository provides a SPARQL execution layer extended with user defined functions (UDFs) that can call local resources (files, directories, CSV/HTML content) and, optionally, external search, vector, or large language model backends. The design goal is to let a single SPARQL query orchestrate multi‑step data acquisition and light transformation without writing glue code.
+
+This README focuses on running a first query without any API key or remote dependency. Optional advanced capabilities (web search, online LLMs, vector similarity) can be enabled later but are not required for the basic examples below.
+
+## Key Features (short list)
+* Extend SPARQL with simple function calls (custom prefixes) returning named graphs.
+* Read local files and directories during query execution.
+* Produce intermediate named graphs and re‑query them in the same SPARQL request.
+* Keep / replay gathered data (optional) for deterministic reruns offline.
+
+## Quick Start (offline only)
+
+Clone and install (Python 3.10+ recommended):
 ```
-## slm-run --config config.ini -f queries/city-search-faiss.sparql --debug
-PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX wd: <http://www.wikidata.org/entity/>  
-PREFIX ex: <http://example.org/>
-
-SELECT ?label ?chunk ?label ?uri ?score ?date  WHERE {
-    SERVICE <https://query.wikidata.org/sparql> {
-        SELECT *  WHERE {
-           ?country wdt:P31 wd:Q6256;  # The country (instance of a sovereign state)
-           wdt:P30 wd:Q46;    # Located in Europe (Q46)
-           wdt:P36 ?capital.  # Has capital
-           ?capital rdfs:label ?label.
-           FILTER(LANG(?label) = "en")
-        } 
-    } 
-    BIND(CONCAT("I want a cultural event related to cinema that is located in ",STR(?label)) AS ?rag)
-    BIND(ex:SLM-SEARCH-FAISS(?rag,?capital,5) AS ?gf).
-    GRAPH ?gf {
-        ?capital ex:is_aligned_with ?bn .
-        ?bn ex:has_chunk ?chunk .
-        ?bn ex:has_source ?uri .
-        ?bn ex:has_score ?score .
-    }
-    BIND(ex:SLM-READFILE(?uri) AS ?page)   
-    BIND(CONCAT("""
-    We consider a type Event with the following properties:
-      <http://schema.org/StartDate> : The start date of the event
-      <http://schema.org/name> : The name of the event.
-    Extract from the text below, the date of the event and the name of the event. 
-    Generate only output JSON-LD instance of the Event type with
-    this format replacing the 0 with the date of the event, and 1 with the name of the event:
-     "@context": "https://schema.org/",
-     "@type": "Event",
-     "http://schema.org/StartDate": "0",
-     "http://schema.org/name": "1",
-    <page>""",STR(?page), "</page>") AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH_OLLA(?prompt,?uri) AS ?gl)
-    GRAPH ?gl {
-        ?uri <http://example.org/has_schema_type> ?root . 
-        ?root a <http://schema.org/Event>. 
-        ?root <http://schema.org/StartDate> ?date.
-        ?root <http://schema.org/name> ?name
-    }    
-} order by DESC(?score) limit 10
-```
-
-with output like that:
-```
-       label                            uri               score              date                           name
-0  Amsterdam  file:///Users/molli-p/SPAR...  15.239427663552743     21 March 2025  Cinema in Amsterdam: Switc...
-1      Paris  file:///Users/molli-p/SPAR...  16.225315614252626  09 February 2025  Cinema in Paris: Distribut...
-2  Amsterdam  file:///Users/molli-p/SPAR...  15.239427663552743     21 March 2025  Cinema in Amsterdam: Switc...
-3     Dublin  file:///Users/molli-p/SPAR...  14.531948130739828        2025-03-30  Cinema in Dublin: Multi-la...
-4   Budapest  file:///Users/molli-p/SPAR...  15.116024306274257        2025-03-11  Cinema in Budapest: Horizo...
-5     Madrid  file:///Users/molli-p/SPAR...  14.380867914788142  24 February 2025  Cinema in Madrid: Open-sou...
-6     Madrid  file:///Users/molli-p/SPAR...  13.516983778696542  25 February 2025  Cinema in Madrid: Realigne...
-```
-
-
-
-# install Basic Software
-
-```
-git clone https://github.com/momo54/SPARQLLM
+git clone <your-fork-or-clone-url>
 cd SPARQLLM
-```
-Or  work in:
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/momo54/SPARQLLM?quickstart=1)
-
-
-
-install with virtualenv (recommended):
-```
-virtualenv venv
+python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 pip install .
 ```
 
-# Install Search, Vector and LLM capabilities
+Verify the command‑line tool is available:
+```
+slm-run --help
+```
 
-Need Ollama installed, For Linux, MacOS:
+## Minimal Configuration
+
+The file `config.ini` already contains default sections. No API keys are needed for local file queries. You can proceed directly to execution.
+
+## First Example: Read a Local CSV
+
+Run a SPARQL query that loads and inspects a small CSV file (see `queries/simple-csv.sparql`):
+```
+slm-run --config config.ini -f queries/filesystem/simple-csv.sparql --debug
+```
+Use `--debug` to see which custom functions are registered and how graphs are materialized.
+
+### Read a Single File
+```
+slm-run --config config.ini -f queries/filesystem/readfile.sparql --debug
+```
+
+### Iterate Over a Directory
+```
+slm-run --config config.ini -f queries/ReadDir.sparql --debug
+```
+
+These examples prove the local UDFs (file and directory access) are working with no external services.
+
+## Inspecting Results
+By default, query solutions stream to stdout. To persist the result bindings (one row per line) use:
+```
+slm-run --config config.ini -f queries/readfile.sparql -o result.txt
+```
+
+To keep all intermediate named graphs for later offline replay:
+```
+slm-run --config config.ini -f queries/readfile.sparql --keep-store session.nq
+```
+Then rerun the logic (adding new clauses or different projection) without touching the network:
+```
+slm-run --config config.ini --load session.nq --format nquads -q "SELECT (COUNT(*) AS ?c) WHERE { ?s ?p ?o }"
+```
+
+## Optional: Local Search / Vector (No API Keys)
+If you want local text search or approximate vector similarity you can build indices. These steps are optional and can be skipped for a first run.
+
+1. Build a Whoosh index (keyword search):
+```
+slm-index-whoosh
+```
+2. Build a FAISS index (vector embeddings):
+```
+slm-index-faiss
+```
+3. Test:
+```
+slm-search-whoosh --help
+slm-search-faiss --help
+```
+
+Queries that combine Wikidata (remote public SPARQL endpoint) with local search exist under `queries/` (e.g., `city-search.sparql`). These do not require private API keys but do rely on the public Wikidata endpoint being reachable.
+
+## Optional: Local LLM via Ollama (No API Key)
+If you have [Ollama](https://ollama.com/) installed you can enable local LLM generation without any API key:
 ```
 curl -fsSL https://ollama.com/install.sh | sh
 ollama serve &
 ollama pull llama3.1:latest
-ollama pull nomic-embed-text
+```
+Then adapt a query calling the local LLM function variants (see queries containing `LLMGRAPH_OLLA`). This is entirely optional.
+
+## Advanced (Requires External Keys – Omitted by Default)
+The codebase also supports web search APIs and hosted LLM providers (e.g., OpenAI, Groq, Mistral). These require setting environment variables and adjusting `[Requests]` in `config.ini`. Since the goal here is a key‑less onboarding path, detailed instructions are intentionally omitted. You can discover the expected variable names by searching for provider modules in `SPARQLLM/udf/`.
+
+## Running With Debug Logs
+Use `--debug` to activate verbose logging (registration of custom functions, external call timing, provenance enrichment). This is helpful when authoring new queries or diagnosing performance.
+
+## Keeping Things Deterministic
+For reproducibility across environments:
+* Pin dependencies in `requirements.txt` (already present).
+* Use `--keep-store` to freeze retrieved graphs.
+* Rerun with `--load` to avoid external calls.
+
+## Query Authoring Patterns
+Custom functions typically bind a named graph that you immediately re‑enter:
+```
+BIND(ex:SLM-READFILE(?path) AS ?g)
+GRAPH ?g { ?doc ?p ?o }
+```
+This pattern lets you chain multiple stages (e.g., directory listing → file read → lightweight extraction) inside one SPARQL query.
+
+Some aliases may hide verbose JSON argument objects. When available they appear as simple function calls (e.g., `ggf:SEARCH("term")`). Inspect existing queries for concrete usage.
+
+## Testing
+Run the test suite (fast, mostly local):
+```
+pytest -q
 ```
 
-Need index and semantic index:
-```
-slm-index-whoosh
-slm-index-faiss
-```
+## Troubleshooting
+| Symptom | Likely Cause | Quick Fix |
+| ------- | ------------ | --------- |
+| Command `slm-run` not found | Package not installed in current venv | Re‑activate venv, `pip install .` |
+| Empty query results | Projection variables not bound | Add a temporary `SELECT *` to inspect bindings |
+| Slow run | Remote endpoint (e.g., Wikidata) latency | Test with a local file query first |
+| Function URI collision | Duplicate alias registration | Adjust alias name or guard registration |
 
-Default values of these commands read and write in expected locations. `slm-index-faiss --help` `slm-index-whoosh --help`
+## Contributing (Neutral Guidelines)
+1. Keep new UDFs minimal; return a coherent named graph.
+2. Add a focused test where practical.
+3. Avoid introducing hard API key dependencies in core logic.
+4. Prefer pure Python standard library unless a dependency adds clear value.
 
-You can test your index with `slm-search-whoosh`and `slm-search-faiss`.
+## License
+Refer to the repository’s license file (if present) for usage terms. In absence of an explicit license, treat the code as “all rights reserved” until clarified.
 
-# run queries
-
-You should be able to run: `slm-run --help`
-```
-Usage: slm-run [OPTIONS]
-
-Options:
-  -q, --query TEXT          SPARQL query to execute (passed in command-line)
-  -f, --file TEXT           File containing a SPARQL query to execute
-  -c, --config TEXT         Config File for User Defined Functions
-  -l, --load TEXT           RDF data file to load
-  -fo, --format TEXT        Format of RDF data file
-  -d, --debug               turn on debug.
-  -k, --keep-store TEXT     File to store the RDF data collected during the
-  -o, --output-result TEXT  File to store the result of the query query. 1
-                            line per result
-  --help                    Show this message and exit.
-```
-
-# Run queries working with the local file system
-
-
-Run a simple queries using the local file system as external source :
-```
-slm-run --config config.ini -f queries/simple-csv.sparql --debug
-slm-run --config config.ini -f queries/readfile.sparql --debug
-slm-run --config config.ini -f queries/ReadDir.sparql --debug
-```
-
-We can read files, html-files, csv-files, directories during query processing.
-
-
-# Run queries working with Search capabilities
-
-Run a simple query with a (local) Search Engine [Whoosh](https://github.com/whoosh-community/whoosh):
-```
-slm-run --config config.ini -f queries/city-search.sparql --debug
-```
-
-# run queries with Search and LLms
-
-Combine Wikidata, Vector Search and LLM in a single query [See the query](queries/city-search-faiss-llm.sparql). It is slow on codespace as there is no GPU:
-```
-slm-run --config config.ini -f queries/city-search-faiss-llm.sparql --debug
-```
-
-Same query with keyword search instead of vector search:
-```
-slm-run --config config.ini -f queries/city-search-llm.sparql --debug
-```
-
-Keep store and replay:
-```
-slm-run --config config.ini -f queries/city-search-faiss-llm.sparql --keep-store city.nq
-slm-run --config config.ini --load city.nq  --format nquads -f queries/city-search-faiss-llm.sparql
-```
-
-Your query can be rexecuted quickly with only local access now.
-
-
-## Working with web search engines
-
-If you want to perform the same query on the WEB with [Google Search API](https://developers.google.com/custom-search), your custom search Google API have
-to be  activated and the keys have to be available as environment variables :
-```
-export GOOGLE_API_KEY=xxxxxxxx_orbIQ302-4NOQhRnxxxxxxx
-export GOOGLE_CX=x4x3x5x4xfxxxxxxx
-```
-
-You should be able to run the same query than before with Google
-as a search engine.
-```
-slm-run --config config.ini -f queries/city-search.sparql --debug
-```
-
-
-## Working a online LLMs
-
-If you  use GROQ, your GROQ API key should be available as an environment variable:
-```
-export GROQ_API_KEY=xxxx
-```
-
-Model to use should be configured in config.ini:
-```
-...
-[Requests]
-...
-SLM-GROQ-MODEL=llama3-8b-8192
-```
-
-
-If you  use MISTRAL AI, your MistralAI API key should be available as an environment variable:
-```
-export MISTRAL_API_KEY='xxxx'
-```
-
-Model to use should be configured in config.ini:
-```
-...
-[Requests]
-...
-SLM-MISTRALAI-MODEL=ministral-8b-latest
-```
-
-test the same query with:
-```
-slm-run --config config.ini -f queries/city-search-llm.sparql --debug
-```
-
-
-If you want to use CHATGPT, your chatGPT api key should be available as an environment variable
-```
-export OPENAI_API_KEY=xxxxxxxxx
-```
-
-Model to use should be configured in config.ini:
-```
-...
-[Requests]
-...
-SLM-OPENAI-MODEL=gpt-3.5-turbo-0125
-```
-
-test the same query with:
-```
-slm-run --config config.ini -f queries/city-search-llm.sparql --debug
-```
-
-# Starting a local StreamLit UI
-
-```
-streamlit run scripts/streamlit-slm.py 
-```
-![SPARQLLM StreamLit Screen](scripts/screenshot.png)
-
-
-# Developpers
-
-Developping new function is very easy. Just go into SPARQL/udf to see how we wrote User Defined Functions you just used, code is very short and can be used as a template for your custom functions. 
-
-You can run tests by  just typing :
-```
-pytest
-```
+---
+You now have everything needed to execute a first SPARQL query locally with no API keys. Explore `queries/` and iterate from there.

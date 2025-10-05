@@ -1,1 +1,0 @@
-Execution time: 130.74 seconds

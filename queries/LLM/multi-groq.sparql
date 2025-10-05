@@ -1,13 +1,14 @@
-# slm-run --config config.ini -f queries/multi-groq.sparql --debug
+# slm-run --config config.ini -f queries/LLM/multi-groq.sparql --debug
 
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>  
 PREFIX ex: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 
 select * {
-    BIND(URI(ex:SLM-FILE("./data/events")) AS ?dir)
-    BIND(ex:SLM-READDIR(?dir,?dir) AS ?dir_graph)
+    BIND(URI(ggf:SLM-FILE("./data/events")) AS ?dir)
+    BIND(ggf:SLM-READDIR(?dir,?dir) AS ?dir_graph)
     GRAPH ?dir_graph {
         select * {
           ?dir ex:has_path ?uri .
@@ -15,9 +16,9 @@ select * {
           ?uri ex:has_size ?s1 .
           filter (str(?t1)="file")
           filter (STRENDS(str(?uri), ".txt"))
-        } limit 1000
+        } limit 5
     } 
-    BIND(ex:SLM-READFILE(?uri) AS ?page)
+    BIND(ggf:SLM-READFILE(?uri) AS ?page)
 
     BIND(CONCAT("""
     We consider a type Event with the following properties:
@@ -26,15 +27,15 @@ select * {
     Extract from the text below, the date of the event and the name of the event. 
     Generate only output JSON-LD instance of the Event type with
     this format replacing the 0 with the date of the event, and 1 with the name of the event:
-     "@context": "https://schema.org/",
+     "@context": "http://schema.org/",
      "@type": "Event",
      "http://schema.org/StartDate": "0",
      "http://schema.org/name": "1",
     <page>""",STR(?page), "</page>") AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?event_graph)
+    BIND(ggf:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?event_graph)
     GRAPH ?event_graph {
-        ?uri <http://example.org/has_schema_type> ?root . 
-        ?root a <http://schema.org/Event>. 
+#        ?uri <http://example.org/has_schema_type> ?root . 
+#        ?root a <http://schema.org/Event>. 
         ?root <http://schema.org/StartDate> ?date.
         ?root <http://schema.org/name> ?name
     }    

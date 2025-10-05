@@ -1,11 +1,12 @@
 ## run with 
 ## synthetic data should be created first
-## slm-run --config config.ini -f queries/city-search.sparql --debug
+## slm-run --config config.ini -f queries/faiss/city-search.sparql --debug
 ##
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>  
 PREFIX ex: <http://example.org/>
+PREFIX ggf: <http://ggf.org/>
 
 SELECT ?label ?uri ?score  WHERE {
     SERVICE <https://query.wikidata.org/sparql> {
@@ -18,7 +19,7 @@ SELECT ?label ?uri ?score  WHERE {
         } 
     } 
     BIND(CONCAT("cinema screening ",STR(?label)) AS ?keywords)
-    BIND(ex:SLM-SEARCH(?keywords,?capital,5) AS ?segraph).
+    BIND(ggf:SLM-SEARCH(?keywords,?capital,5) AS ?segraph).
     GRAPH ?segraph {
         ?capital ex:search_result ?bn .
         ?bn ex:has_uri ?uri .

@@ -1,25 +1,20 @@
-# slm-run --config config.ini -f queries/simple-groq.sparql --debug
+# slm-run --config config.ini -f queries/LLM/hello_neuro.sparql --debug
 
-PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX wd: <http://www.wikidata.org/entity/>  
-PREFIX ex: <http://example.org/>
-PREFIX schema: <http://schema.org/>
+PREFIX ggf: <http://ggf.org/>
+PREFIX schema: <https://schema.org/>
 
 SELECT ?msg {
     BIND("""Say Hello to the neuro-symbolic world:
     Return *ONLY* a JSON-LD object of type `Event` in the following format:
     {
-      "@context": "http://schema.org/",
+      "@context": "https://schema.org/",
       "@type": "Event",
       "message": "text",
     }
     """ AS ?prompt)
-    BIND(<http://example.org/hello> AS ?uri)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
+    BIND(ggf:LLM(?prompt) AS ?g)
      GRAPH ?g {
-        ?uri ex:has_schema_type ?bn . 
         ?root a schema:Event. 
-        ?root schema:message ?msg .
+        OPTIONAL { ?root schema:message ?msg . }
      }
 }

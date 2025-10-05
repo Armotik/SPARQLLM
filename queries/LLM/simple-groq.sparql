@@ -1,15 +1,16 @@
-# slm-run --config config.ini -f queries/simple-groq.sparql --debug
+# slm-run --config config.ini -f queries/LLM/simple-groq.sparql --debug
 
 PREFIX wdt: <http://www.wikidata.org/prop/direct/>    # Propriétés directes (ex. wdt:P31 pour "instance de")
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX wd: <http://www.wikidata.org/entity/>  
 PREFIX ex: <http://example.org/>
-PREFIX schema: <http://schema.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX ggf: <http://ggf.org/>
 
 select * {
     # strange only 85 raise an error...
-    BIND(ex:SLM-FILE("./data/events/event_85.txt") AS ?uri)
-    BIND(ex:SLM-READFILE(?uri) AS ?page)
+    BIND(ggf:SLM-FILE("./data/events/event_85.txt") AS ?uri)
+    BIND(ggf:SLM-READFILE(?uri) AS ?page)
 
     BIND(CONCAT("""
     Extract from the text below the date and the name of the event.
@@ -17,7 +18,7 @@ select * {
     Return **only** a JSON-LD object of type `Event` using the `http://schema.org/` context, in the following format:
 
     {
-      "@context": "http://schema.org/",
+      "@context": "https://schema.org/",
       "@type": "Event",
       "startDate": "2025-01-01",
       "name": "Sample Event Name"
@@ -29,7 +30,7 @@ select * {
 
     Here is the text to analyze:
     <text>""",STR(?page),"</text>") AS ?prompt)
-    BIND(ex:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
+    BIND(ggf:SLM-LLMGRAPH_GROQ(?prompt,?uri) AS ?g)
      GRAPH ?g {
         ?uri ex:has_schema_type ?root . 
         ?root a schema:Event. 
