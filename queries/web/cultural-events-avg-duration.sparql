@@ -1,0 +1,91 @@
+## slm-run --config config.ini -f queries/web/cultural-events-avg-duration.sparql --debug
+## Aggregated average durations per MCP call and per model (stack-ready output)
+## Produces: model durSearch durSnap durLLM total
+
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX schema: <https://schema.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX ex: <http://example.org/>
+
+SELECT (STR(?requestedModel) AS ?model) ?durSearch ?durSnap ?durLLM (?total AS ?total)
+WHERE {
+  {
+    SELECT ?requestedModel (AVG(?durSearchRaw) AS ?durSearch) (AVG(?durSnapRaw) AS ?durSnap) (AVG(?durLLMRaw) AS ?durLLM)
+    WHERE {
+      ## 1) European capitals (limit for speed)
+      SERVICE <https://query.wikidata.org/sparql> {
+        SELECT DISTINCT ?capitalLabel WHERE {
+          ?country wdt:P31 wd:Q6256 ;
+                   wdt:P30 wd:Q46 ;
+                   wdt:P36 ?capital .
+          ?capital rdfs:label ?capitalLabel .
+          FILTER(LANG(?capitalLabel) = "en")
+        } ORDER BY ?capitalLabel LIMIT 10
+      }
+
+      ## 2) Search (DuckDuckGo)
+      BIND(CONCAT("cultural event ", STR(?capitalLabel)) AS ?keywords)
+      BIND(ex:SLM-MCP-TOOL(
+            "duckduckgo","duckduckgo.search",
+            ex:SLM-OBJ(
+              "query", ?keywords,
+              "limit", 3,
+              "region", "us-en",
+              "safesearch", "moderate"
+            )) AS ?gSearch)
+      GRAPH ?gSearch { ?gSearch schema:duration ?durSearchRaw .
+                        ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
+                        ?item schema:item ?page . }
+      BIND(STR(?page) AS ?url)
+
+      ## 3) Snapshot
+      BIND(ex:SLM-MCP-TOOL(
+            "browser","browser.snapshot",
+            ex:SLM-OBJ(
+              "url", ?url,
+              "wait_ms", 500,
+              "text_max", 3000,
+              "snippet_only", true,
+              "redact_pi", true
+            )) AS ?gSnap)
+      GRAPH ?gSnap {
+        ?gSnap schema:duration ?durSnapRaw .
+        ?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text .
+      }
+
+      ## Models to test
+      VALUES ?requestedModel {
+        "openai/gpt-oss-20b"
+        "llama-3.3-70b-versatile"
+        "openai/gpt-oss-120b"
+      }
+
+      ## Prompt (trim text)
+      BIND(
+        CONCAT(
+          """From the following English page text, extract cultural event details if present.\nReturn ONLY a JSON-LD object with the exact shape below (omit extra text):\n{\n  \"@context\": \"https://schema.org/\",\n  \"@type\": \"Event\",\n  \"name\": \"...\",\n  \"startDate\": \"YYYY-MM-DD\"\n}\n\nText (English):\n<page>\n""",
+          SUBSTR(?text,1,3000),
+          """\n</page>"""
+        ) AS ?prompt
+      )
+
+      ## 4) LLM extraction
+      BIND(ex:SLM-MCP-TOOL(
+            "groq","groq.generate_jsonld",
+            ex:SLM-OBJ(
+              "prompt", ?prompt,
+              "model", ?requestedModel,
+              "temperature", "0.0"
+            )) AS ?gLLM)
+      GRAPH ?gLLM { ?gLLM schema:duration ?durLLMRaw }
+    }
+    GROUP BY ?requestedModel
+  }
+  BIND((?durSearch + ?durSnap + ?durLLM) AS ?total)
+}
+ORDER BY ?model

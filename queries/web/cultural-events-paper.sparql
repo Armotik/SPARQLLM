@@ -1,0 +1,60 @@
+## slm-run --config config.ini -f queries/web/cultural-events.sparql --debug
+##
+## Pipeline:
+## 1) Fetch European capitals (Wikidata)
+## 2) For each capital, run a DuckDuckGo search for cultural events
+## 3) Snapshot each found page (short redacted text)
+## 4) Extract with LLM (GROQ) Event { name, startDate }
+##
+PREFIX wd: <http://www.wikidata.org/entity/>
+PREFIX wdt: <http://www.wikidata.org/prop/direct/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX wikibase: <http://wikiba.se/ontology#>
+PREFIX bd: <http://www.bigdata.com/rdf#>
+PREFIX schema: <https://schema.org/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX ggf: <http://ggf.org/>
+PREFIX ex: <http://example.org/>
+
+SELECT ?capitalLabel ?url ?eventName ?eventDate ?pos WHERE {
+  SERVICE <https://query.wikidata.org/sparql> {
+    SELECT DISTINCT ?capitalLabel WHERE {
+      ?country wdt:P31 wd:Q6256 ;        # instance of country
+               wdt:P30 wd:Q46 ;          # continent Europe
+               wdt:P36 ?capital .        # has capital
+      ?capital rdfs:label ?capitalLabel .
+      FILTER(LANG(?capitalLabel) = "en")
+    } ORDER BY ?capitalLabel LIMIT 5
+  }
+  # 1 - Web Search
+  BIND(CONCAT('cultural event ', STR(?capitalLabel)) AS ?keywords)
+  BIND(ggf:SEARCH(?keywords, 3) AS ?gSearch)
+  GRAPH ?gSearch {
+    ?feed a schema:DataFeed ; schema:dataFeedElement ?item .
+    ?item a schema:DataFeedItem ;  schema:item ?page .
+    ?page a schema:WebPage  .
+    BIND(STR(?page) AS ?url) 
+    OPTIONAL { ?item schema:position ?pos }
+  }
+  # 2 - Web retrieval
+  BIND(ggf:SNAP(?url) AS ?gSnap)
+  GRAPH ?gSnap {?page2 a schema:WebPage ; schema:url ?url ; schema:text ?text . }
+
+  # 3 - LLM extraction
+  BIND(CONCAT("""From the following English page text, extract
+    cultural event details if present. Return ONLY a JSON-LD
+    object with the exact shape below (omit extra text, no prose):
+    { "@context": "https://schema.org/",
+      "@type": "Event",
+      "name": "...",
+      "startDate": "YYYY-MM-DD"
+    }
+    Text (English): <page>""", ?text, """</page>"""
+  ) AS ?prompt)
+
+  BIND(ggf:LLM(?prompt) AS ?gLLM)
+  GRAPH ?gLLM { ?root a schema:Event ;
+          schema:name ?eventName ;
+          schema:startDate ?eventDate .  }
+} ORDER BY ?capitalLabel ?pos

@@ -1,0 +1,26 @@
+# run with:
+# slm-run --config config.ini -f queries/mcp/mcp_github_JSON.sparql --debug
+
+PREFIX ggf:    <http://ggf.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX prov:   <http://www.w3.org/ns/prov#>
+PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT  ?pr ?title ?time  WHERE {
+  # Appel tool -> graph blank node contenant le fragment JSON-LD (repo + hasPart)
+BIND( ggf:MCP-TOOL(
+  "github", "github.pullRequests.list",
+  '{ "owner":"twitter", "repo":"the-algorithm", "state":"open", "limit":10 }'^^rdf:JSON
+) AS ?g )
+
+  GRAPH ?g {
+    ?repo a schema:Repository ;
+          schema:hasPart ?pr .
+    OPTIONAL { ?pr schema:name ?title }
+
+    ?g prov:generatedAtTime ?time ;
+  }
+}
+ORDER BY DESC(?t)
+LIMIT 5
+
