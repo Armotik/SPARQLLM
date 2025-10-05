@@ -49,7 +49,7 @@ slm-run --config config.ini -f queries/filesystem/readfile.sparql --debug
 slm-run --config config.ini -f queries/ReadDir.sparql --debug
 ```
 
-These examples prove the local UDFs (file and directory access) are working with no external services.
+These examples prove the local GGFs (file and directory access) are working with no external services.
 
 ## Inspecting Results
 By default, query solutions stream to stdout. To persist the result bindings (one row per line) use:
