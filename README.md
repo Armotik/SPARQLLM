@@ -1,14 +1,55 @@
 ## Overview
 
-This repository provides a SPARQL execution layer extended with user defined functions (UDFs) that can call local resources (files, directories, CSV/HTML content) and, optionally, external search, vector, or large language model backends. The design goal is to let a single SPARQL query orchestrate multi‑step data acquisition and light transformation without writing glue code.
+This repository provides  an implementation of Graph Generating Functions (GGFs) for SPARQL. GGFs provide a simple way to enable Retreival Augmentation (RAG) for SPARQL. Thanks to GGF, it is possible to call a search engine, a LLM, a vector database during SPARQL query execution. A simple example of neuro-symbolic processing is:
+
+```
+# slm-run --config config.ini -f queries/LLM/hello_neuro.sparql --debug
+
+PREFIX ggf: <http://ggf.org/>
+PREFIX schema: <https://schema.org/>
+
+SELECT ?msg {
+    BIND("""Say Hello to the neuro-symbolic world:
+    Return *ONLY* a JSON-LD object of type `Event` in the following format:
+    {
+      "@context": "https://schema.org/",
+      "@type": "Event",
+      "message": "text",
+    }
+    """ AS ?prompt)
+    BIND(ggf:LLM(?prompt) AS ?g)
+     GRAPH ?g {
+        ?root a schema:Event. 
+        OPTIONAL { ?root schema:message ?msg . }
+     }
+}
+```
+
 
 This README focuses on running a first query without any API key or remote dependency. Optional advanced capabilities (web search, online LLMs, vector similarity) can be enabled later but are not required for the basic examples below.
 
+## running 
+```
+% slm-run --help
+Usage: slm-run [OPTIONS]
+
+Options:
+  -q, --query TEXT          SPARQL query to execute (passed in command-line)
+  -f, --file TEXT           File containing a SPARQL query to execute
+  -c, --config TEXT         Config File for User Defined Functions
+  -l, --load TEXT           RDF data file to load
+  -fo, --format TEXT        Format of RDF data file
+  -d, --debug               turn on debug.
+  -k, --keep-store TEXT     File to store the RDF data collected during the
+                            query
+  -o, --output-result TEXT  File to store the result of the query.
+  -o, --output-result TEXT  File to store the result in CSV of the query.
+  --help                    Show this message and exit.
+```
+
 ## Key Features (short list)
-* Extend SPARQL with simple function calls (custom prefixes) returning named graphs.
-* Read local files and directories during query execution.
-* Produce intermediate named graphs and re‑query them in the same SPARQL request.
-* Keep / replay gathered data (optional) for deterministic reruns offline.
+* Extend SPARQL with Graph Generating Functions (GGFs) returning fresh RDF graphs.
+* Allows to call any external API during SPARQL query processing including LLM, Vector database, SQL etc...
 
 ## Quick Start (offline only)
 

@@ -14,11 +14,10 @@ import os
 import json
 
 import pandas as pd
-from rdflib import Graph, URIRef, Literal, Namespace
+from rdflib import Graph, URIRef, Literal, Namespace,BNode
 from rdflib.namespace import RDF, XSD
 
 import traceback
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,15 +31,12 @@ def slm_csv(file_url):
         # Initialize the RDF graph
         n = Namespace("http://example.org/")
 
+        graph_uri=BNode()            
+        named_graph = store.get_context(graph_uri)
+
         # Define a generic class for the CSV records
         Record = URIRef(n.Record)
 
-        graph_uri=URIRef(file_url)
-        if  named_graph_exists(store, graph_uri):
-            logger.debug(f"Graph {graph_uri} already exists (good)")
-            return None
-        else:
-            named_graph = store.get_context(graph_uri)
 
         # Create properties for each column
         properties = {col: URIRef(n[col]) for col in df.columns}
