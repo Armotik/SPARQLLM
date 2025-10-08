@@ -1,0 +1,28 @@
+# run with:
+# slm-run --config config.ini -f queries/mcp/github-prov.sparql --debug
+
+PREFIX ggf:    <http://ggf.org/>
+PREFIX schema: <https://schema.org/>
+PREFIX prov:   <http://www.w3.org/ns/prov#>
+
+CONSTRUCT {
+  ?g prov:generatedAtTime ?time ;
+     prov:wasGeneratedBy ?inputActivity .
+  ?inputActivity prov:wasAssociatedWith ?agent ;
+                 prov:used ?req .
+  ?req prov:value ?reqVal .
+  ?g schema:duration ?duration .
+}
+#SELECT *  
+WHERE {
+  BIND( ggf:GITHUB("twitter", "the-algorithm") AS ?g )
+  GRAPH ?g {
+    ?g prov:generatedAtTime ?time .
+    ?g prov:wasGeneratedBy ?inputActivity .
+    ?inputActivity prov:wasAssociatedWith ?agent .
+    ?inputActivity prov:used ?req .
+    ?inputActivity schema:duration ?duration .
+    OPTIONAL {?req prov:value ?reqVal .}
+   
+  }
+} LIMIT 5

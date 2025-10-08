@@ -1,5 +1,18 @@
 # Experimental Workflow: Generate, Search, and Evaluate Metrics
 
+* Run the qery 
+'''
+slm-run --config config.ini -f queries/web/cultural-events-plot.sparql -o out/plot.csv
+'''
+
+* execute the plot:
+'''
+python scripts/plot_cultural_web_timings.py --csv out/plot.csv --output plots/  
+'''
+
+
+# Experiment with FAIS
+
 This document describes the experimental workflow for generating synthetic cultural event data, searching through the FAISS index, and evaluating the retrieval and extraction metrics.
 
 ```bash

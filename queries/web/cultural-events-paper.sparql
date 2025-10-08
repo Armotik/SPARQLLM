@@ -25,7 +25,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?pos WHERE {
                wdt:P36 ?capital .        # has capital
       ?capital rdfs:label ?capitalLabel .
       FILTER(LANG(?capitalLabel) = "en")
-    } ORDER BY ?capitalLabel LIMIT 5
+    } ORDER BY ?capitalLabel LIMIT 10
   }
   # 1 - Web Search
   BIND(CONCAT('cultural event ', STR(?capitalLabel)) AS ?keywords)
@@ -55,6 +55,7 @@ SELECT ?capitalLabel ?url ?eventName ?eventDate ?pos WHERE {
 
   BIND(ggf:LLM(?prompt) AS ?gLLM)
   GRAPH ?gLLM { ?root a schema:Event ;
-          schema:name ?eventName ;
-          schema:startDate ?eventDate .  }
+          OPTIONAL {?root schema:name ?eventName }
+          OPTIONAL {?root schema:startDate ?eventDate .}
+      }
 } ORDER BY ?capitalLabel ?pos

@@ -1,0 +1,89 @@
+capitalLabel,url,eventName,eventDate,pos,durSearch,durSnap,requestedModel,durLLM
+Amsterdam,https://www.amsterdam.info/events/index-old.php,Amsterdam Light Festival,2025-12-01,1,1.195873,2.417244,openai/gpt-oss-20b,0.768177
+Amsterdam,https://www.amsterdam.info/events/index-old.php,Amsterdam Light Festival,2024-12-01,1,1.195873,2.417244,llama-3.3-70b-versatile,0.282827
+Amsterdam,https://www.amsterdam.info/events/index-old.php,Amsterdam Light Festival,,1,1.195873,2.417244,openai/gpt-oss-120b,0.99495
+Amsterdam,https://www.amsterdam.info/events/,King's Day in Amsterdam,2025-04-27,2,1.195873,1.732623,openai/gpt-oss-20b,1.104156
+Amsterdam,https://www.amsterdam.info/events/,Amsterdam Light Festival,2024-12-01,2,1.195873,1.732623,llama-3.3-70b-versatile,0.278355
+Amsterdam,https://www.amsterdam.info/events/,Amsterdam Light Festival,,2,1.195873,1.732623,openai/gpt-oss-120b,1.24459
+Amsterdam,https://www.amsterdam.net/en/amsterdam-events/,King's Festival,,3,1.195873,2.099841,openai/gpt-oss-20b,0.754282
+Amsterdam,https://www.amsterdam.net/en/amsterdam-events/,King's Festival,Not specified,3,1.195873,2.099841,llama-3.3-70b-versatile,0.283323
+Amsterdam,https://www.amsterdam.net/en/amsterdam-events/,King's Festival,,3,1.195873,2.099841,openai/gpt-oss-120b,1.093424
+Andorra la Vella,https://visitandorra.com/en/agenda/agenda-andorra-la-vella/,,,1,0.970027,2.431119,openai/gpt-oss-20b,0.415242
+Andorra la Vella,https://visitandorra.com/en/agenda/agenda-andorra-la-vella/,,,1,0.970027,2.431119,llama-3.3-70b-versatile,0.992609
+Andorra la Vella,https://visitandorra.com/en/agenda/agenda-andorra-la-vella/,,,1,0.970027,2.431119,openai/gpt-oss-120b,0.51099
+Andorra la Vella,https://www.bandsintown.com/c/andorra-la-vella-andorra,,,2,0.970027,3.361381,openai/gpt-oss-20b,0.365121
+Andorra la Vella,https://www.bandsintown.com/c/andorra-la-vella-andorra,Concerts & Events in Andorra La Vella,2024-01-01,2,0.970027,3.361381,llama-3.3-70b-versatile,0.281271
+Andorra la Vella,https://www.bandsintown.com/c/andorra-la-vella-andorra,,,2,0.970027,3.361381,openai/gpt-oss-120b,0.82821
+Andorra la Vella,https://visitandorra.com/en/agenda/andorra-la-vella-festival/,2024 Andorra la Vella Festival,,3,0.970027,6.084985,openai/gpt-oss-20b,0.72748
+Andorra la Vella,https://visitandorra.com/en/agenda/andorra-la-vella-festival/,2024 Andorra la Vella Festival,2024-01-01,3,0.970027,6.084985,llama-3.3-70b-versatile,0.248616
+Andorra la Vella,https://visitandorra.com/en/agenda/andorra-la-vella-festival/,2024 Andorra la Vella Festival,2024-01-01,3,0.970027,6.084985,openai/gpt-oss-120b,1.160725
+Athens,https://athensattica.com/events/armata-festival-2025/,,,1,0.710231,0.821001,openai/gpt-oss-20b,0.62543
+Athens,https://athensattica.com/events/armata-festival-2025/,,,1,0.710231,0.821001,llama-3.3-70b-versatile,0.248252
+Athens,https://athensattica.com/events/armata-festival-2025/,,,1,0.710231,0.821001,openai/gpt-oss-120b,0.503676
+Athens,https://www.athens24.com/news/curtain-falls-for-the-summer-in-athens-festival-with-over-20000-spectators.html,,,2,0.710231,3.252893,openai/gpt-oss-20b,0.559192
+Athens,https://www.athens24.com/news/curtain-falls-for-the-summer-in-athens-festival-with-over-20000-spectators.html,,,2,0.710231,3.252893,llama-3.3-70b-versatile,0.220951
+Athens,https://www.athens24.com/news/curtain-falls-for-the-summer-in-athens-festival-with-over-20000-spectators.html,,,2,0.710231,3.252893,openai/gpt-oss-120b,1.061562
+Athens,https://www.tiktok.com/@florido.lico/video/7306992228658990342,,,3,0.710231,1.93073,openai/gpt-oss-20b,1.100075
+Athens,https://www.tiktok.com/@florido.lico/video/7306992228658990342,,,3,0.710231,1.93073,llama-3.3-70b-versatile,0.258405
+Athens,https://www.tiktok.com/@florido.lico/video/7306992228658990342,,,3,0.710231,1.93073,openai/gpt-oss-120b,1.71469
+Berlin,https://www.berlin.de/en/events/,Carnival of Cultures,,1,0.710365,3.566383,openai/gpt-oss-20b,0.770511
+Berlin,https://www.berlin.de/en/events/,New Year's Eve party at the Brandenburg Gate,2025-12-31,1,0.710365,3.566383,llama-3.3-70b-versatile,0.404413
+Berlin,https://www.berlin.de/en/events/,,,1,0.710365,3.566383,openai/gpt-oss-120b,1.203916
+Berlin,https://www.visitberlin.de/en/event-calendar-berlin,,,2,0.710365,1.714634,llama-3.3-70b-versatile,0.233448
+Berlin,https://www.visitberlin.de/en/event-calendar-berlin,,,2,0.710365,1.714634,openai/gpt-oss-120b,0.522056
+Berlin,https://www.kontramarka.de/en/tour/aleksey-gorbunov-tvorcheskiy-vecher/,Cultural event with Oleksiy Gorbunov in Berlin,2025-07-25,3,0.710365,3.021864,openai/gpt-oss-20b,0.266947
+Berlin,https://www.kontramarka.de/en/tour/aleksey-gorbunov-tvorcheskiy-vecher/,Cultural event with Oleksiy Gorbunov in Berlin,2025-07-25,3,0.710365,3.021864,llama-3.3-70b-versatile,0.235149
+Berlin,https://www.kontramarka.de/en/tour/aleksey-gorbunov-tvorcheskiy-vecher/,Cultural event with Oleksiy Gorbunov in Berlin,2025-07-25,3,0.710365,3.021864,openai/gpt-oss-120b,0.427116
+Bern,https://madeinbern.com/en/experiences/year-round/events/top-cultural-events,Wine festivals in the Bern Region,2025-09-12,1,1.044309,3.05789,openai/gpt-oss-20b,0.560756
+Bern,https://madeinbern.com/en/experiences/year-round/events/top-cultural-events,Wine festivals in the Bern Region,2025-09-12,1,1.044309,3.05789,llama-3.3-70b-versatile,0.266268
+Bern,https://madeinbern.com/en/experiences/year-round/events/top-cultural-events,Wine festivals in the Bern Region,2025-09-12,1,1.044309,3.05789,openai/gpt-oss-120b,0.652514
+Bern,https://bern.com/en/news/event-calendar/,,,2,1.044309,1.58191,openai/gpt-oss-20b,0.685188
+Bern,https://bern.com/en/news/event-calendar/,,,2,1.044309,1.58191,llama-3.3-70b-versatile,0.273504
+Bern,https://bern.com/en/news/event-calendar/,,,2,1.044309,1.58191,openai/gpt-oss-120b,0.527009
+Bern,https://www.bern.ch/themen/freizeit-und-sport/veranstaltungen/grosse-events,,,3,1.044309,2.082394,llama-3.3-70b-versatile,0.26601
+Bern,https://www.bern.ch/themen/freizeit-und-sport/veranstaltungen/grosse-events,,,3,1.044309,2.082394,openai/gpt-oss-120b,0.788278
+Bratislava,https://simple.wikipedia.org/wiki/Culture,Wikipedia fundraiser,2025-10-08,1,0.324779,2.051042,openai/gpt-oss-20b,0.880309
+Bratislava,https://simple.wikipedia.org/wiki/Culture,Wikipedia fundraiser,2024-10-08,1,0.324779,2.051042,llama-3.3-70b-versatile,0.27683
+Bratislava,https://simple.wikipedia.org/wiki/Culture,,,1,0.324779,2.051042,openai/gpt-oss-120b,0.61812
+Bratislava,https://www.definitions.net/definition/Cultural,,,2,0.324779,3.287538,openai/gpt-oss-20b,0.41747
+Bratislava,https://www.definitions.net/definition/Cultural,cultural events,2024-01-01,2,0.324779,3.287538,llama-3.3-70b-versatile,0.272536
+Bratislava,https://www.definitions.net/definition/Cultural,,,2,0.324779,3.287538,openai/gpt-oss-120b,1.177441
+Bratislava,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,,3,0.324779,2.454809,openai/gpt-oss-20b,0.613122
+Bratislava,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,Not specified,3,0.324779,2.454809,llama-3.3-70b-versatile,0.264926
+Bratislava,https://www.vocabulary.com/dictionary/cultural,,,3,0.324779,2.454809,openai/gpt-oss-120b,0.966507
+Bucharest,https://www.romania-insider.com/athenaeum-summer-festival-jun-2025,Outdoor classical music concerts at Athenaeum Summer Festival,2025-06-14,1,0.917457,2.851929,openai/gpt-oss-20b,0.441688
+Bucharest,https://www.romania-insider.com/athenaeum-summer-festival-jun-2025,Athenaeum Summer Festival,2025-06-14,1,0.917457,2.851929,llama-3.3-70b-versatile,0.304183
+Bucharest,https://www.romania-insider.com/athenaeum-summer-festival-jun-2025,Outdoor classical music concerts at Athenaeum Summer Festival,2025-06-14,1,0.917457,2.851929,openai/gpt-oss-120b,1.37135
+Bucharest,https://www.cooldestinations.com/go/bucharest/calendar/,,,2,0.917457,3.965737,openai/gpt-oss-20b,0.656008
+Bucharest,https://www.cooldestinations.com/go/bucharest/calendar/,Bucharest 2025 Calendar of Events,2025-01-01,2,0.917457,3.965737,llama-3.3-70b-versatile,0.27209
+Bucharest,https://www.cooldestinations.com/go/bucharest/calendar/,,,2,0.917457,3.965737,openai/gpt-oss-120b,1.474973
+Bucharest,https://www.tiktok.com/discover/bucharest-events,,,3,0.917457,1.711589,openai/gpt-oss-20b,0.473025
+Bucharest,https://www.tiktok.com/discover/bucharest-events,Bucharest Events,2025-01-01,3,0.917457,1.711589,llama-3.3-70b-versatile,0.281205
+Bucharest,https://www.tiktok.com/discover/bucharest-events,,,3,0.917457,1.711589,openai/gpt-oss-120b,0.781396
+Budapest,https://simple.wikipedia.org/wiki/Culture,Fundraiser – The internet we were promised,2025-10-08,1,0.280877,1.132448,openai/gpt-oss-20b,0.560265
+Budapest,https://simple.wikipedia.org/wiki/Culture,Wikipedia fundraiser,2024-10-08,1,0.280877,1.132448,llama-3.3-70b-versatile,0.308242
+Budapest,https://simple.wikipedia.org/wiki/Culture,,,1,0.280877,1.132448,openai/gpt-oss-120b,1.539269
+Budapest,https://www.definitions.net/definition/Cultural,,,2,0.280877,1.949026,openai/gpt-oss-20b,0.591386
+Budapest,https://www.definitions.net/definition/Cultural,cultural events,2024-01-01,2,0.280877,1.949026,llama-3.3-70b-versatile,0.338793
+Budapest,https://www.definitions.net/definition/Cultural,,,2,0.280877,1.949026,openai/gpt-oss-120b,0.797218
+Budapest,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,,3,0.280877,1.850692,openai/gpt-oss-20b,0.608494
+Budapest,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,Not specified,3,0.280877,1.850692,llama-3.3-70b-versatile,0.24936
+Budapest,https://www.vocabulary.com/dictionary/cultural,,,3,0.280877,1.850692,openai/gpt-oss-120b,1.499277
+City of Brussels,https://www.brussels.be/cultural-festivals-and-events,,,1,0.783635,4.509269,openai/gpt-oss-20b,0.751256
+City of Brussels,https://www.brussels.be/cultural-festivals-and-events,,,1,0.783635,4.509269,llama-3.3-70b-versatile,0.250282
+City of Brussels,https://www.brussels.be/cultural-festivals-and-events,,,1,0.783635,4.509269,openai/gpt-oss-120b,0.720656
+City of Brussels,https://www.visit.brussels/en/visitors/agenda,,,2,0.783635,0.275512,openai/gpt-oss-20b,0.526984
+City of Brussels,https://www.visit.brussels/en/visitors/agenda,,,2,0.783635,0.275512,llama-3.3-70b-versatile,0.218714
+City of Brussels,https://www.visit.brussels/en/visitors/agenda,,,2,0.783635,0.275512,openai/gpt-oss-120b,0.608897
+City of Brussels,https://cultureactivities.com/free-cultural-events-brussels-city-for-tourists/,Free Cultural Events in Brussels City for Tourists,2025-07-27,3,0.783635,1.976775,openai/gpt-oss-20b,0.435946
+City of Brussels,https://cultureactivities.com/free-cultural-events-brussels-city-for-tourists/,Free Cultural Events in Brussels City for Tourists,2025-07-27,3,0.783635,1.976775,llama-3.3-70b-versatile,0.292147
+City of Brussels,https://cultureactivities.com/free-cultural-events-brussels-city-for-tourists/,Free Cultural Events in Brussels City for Tourists,2025-07-27,3,0.783635,1.976775,openai/gpt-oss-120b,0.90409
+Copenhagen,https://simple.wikipedia.org/wiki/Culture,An important update for readers in France,2023-10-08,1,0.481618,1.125546,openai/gpt-oss-20b,0.812878
+Copenhagen,https://simple.wikipedia.org/wiki/Culture,Wikipedia fundraiser,2025-10-08,1,0.481618,1.125546,llama-3.3-70b-versatile,0.266765
+Copenhagen,https://simple.wikipedia.org/wiki/Culture,,,1,0.481618,1.125546,openai/gpt-oss-120b,1.398511
+Copenhagen,https://www.definitions.net/definition/Cultural,,,2,0.481618,1.851824,openai/gpt-oss-20b,0.97008
+Copenhagen,https://www.definitions.net/definition/Cultural,cultural events,2024-01-01,2,0.481618,1.851824,llama-3.3-70b-versatile,0.27513
+Copenhagen,https://www.definitions.net/definition/Cultural,,,2,0.481618,1.851824,openai/gpt-oss-120b,0.696833
+Copenhagen,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,,3,0.481618,1.667873,openai/gpt-oss-20b,0.675715
+Copenhagen,https://www.vocabulary.com/dictionary/cultural,Vocabulary Bowl,Not specified,3,0.481618,1.667873,llama-3.3-70b-versatile,0.205849
+Copenhagen,https://www.vocabulary.com/dictionary/cultural,,,3,0.481618,1.667873,openai/gpt-oss-120b,0.670992

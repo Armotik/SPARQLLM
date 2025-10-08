@@ -47,6 +47,15 @@ def recurse_update(query_str,ginit,max_depth_lit=Literal(10)):
             return gin_rec
 
         logger.debug(f"inserted:{len(inserted)}, deleted:{len(deleted)}")
+        for triple in inserted:
+            logger.debug(f"  + {triple[0].n3()} {triple[1].n3()} {triple[2].n3()} .")
+        for triple in deleted:
+            logger.debug(f"  - {triple[0].n3()} {triple[1].n3()} {triple[2].n3()} .")
+
+         # recurse if depth not exceeded
+
+        for triple in gin.triples((None,None,None)):
+            logger.debug(f" state before rec {triple[0].n3()} {triple[1].n3()} {triple[2].n3()} .")
 
         if depth <= max_depth:
             return func_recurse_on(gin_rec,depth+1)
@@ -61,7 +70,7 @@ def recurse_update(query_str,ginit,max_depth_lit=Literal(10)):
         raise ValueError("Recurse Error : "+str(e))
 
     logger.debug(f"RECURSE end: graph {g_output} has {len(store.graph(g_output))} triples")
-#    for triple in g_output:
-#        logger.debug(f"recurse end triple: {triple}")
+    # for t in store.graph(g_output).triples((None,None,None)):
+    #     logger.debug(f"  {t[0].n3()} {t[1].n3()} {t[2].n3()} .")
     return g_output
 
