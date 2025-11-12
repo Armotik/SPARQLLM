@@ -41,46 +41,42 @@ def setup_config():
 @pytest.mark.skipif(not os.path.exists("./data/results.csv"), reason="CSV file './data/results.csv' not found.")
 def test_sparql_csv_function(setup_config):
     """
-    Test that the SPARQL function correctly processes CSV data.
+    Test que la fonction SPARQL convertit correctement un CSV en graph RDF par défaut.
     """
     query_str = """
     PREFIX ex: <http://example.org/>
+    PREFIX ggf: <http://ggf.org/>
     SELECT ?x ?z WHERE {
-        BIND(ex:SLM-FILE("./data/results.csv") AS ?value)
-        BIND(ex:SLM-CSV(?value) AS ?g)
-        graph ?g {
+        BIND(ggf:SLM-FILE("data/results.csv") AS ?value)
+        BIND(ggf:SLM-CSV(?value) AS ?g)
+        GRAPH ?g {
             ?x <http://example.org/city> ?z .
         }
-    } limit 10
+    } LIMIT 10
     """
     result = store.query(query_str)
 
-    # Ensure result is not empty
     assert result is not None, "SPARQL query returned None"
-
-    # Convert result to a list for assertion checks
     rows = list(result)
 
-    # Ensure that some rows are returned
-    assert len(rows) > 0, "SPARQL query returned no results"
+    # Debug logging du nombre de lignes
+    logging.debug(f"Nombre de résultats (default mapping): {len(rows)}")
 
-    # Debug output (optional)
-    # print_result_as_table(result)
+    assert len(rows) > 0, "SPARQL query returned no results"
 
 
 @pytest.mark.skipif(not os.path.exists("./data/results.csv"), reason="CSV file './data/results.csv' not found.")
 def test_sparql_csv_with_mappings(setup_config):
     """
-    Test that the SPARQL function correctly processes CSV data
-    using an external CONSTRUCT mapping file (advanced use case).
+    Test que la fonction SPARQL applique correctement un fichier de mapping CONSTRUCT externe.
     """
 
-    # Create mapping file
-    mappings_dir = "./data/mappings"
+    # Création du fichier de mapping
+    mappings_dir = "data/mappings"
     mappings_file = os.path.join(mappings_dir, "mycsv.map")
     os.makedirs(mappings_dir, exist_ok=True)
 
-    # Define the mapping query
+    # Définition de la requête CONSTRUCT de mapping
     mapping_query = """
     PREFIX ex: <http://example.org/>
     PREFIX mycsv: <http://mycsv.org/>
@@ -93,7 +89,6 @@ def test_sparql_csv_with_mappings(setup_config):
     WHERE {
         ?record rdf:type ex:Record .
         ?record ex:city ?cityValue .
-
         OPTIONAL { ?record ex:team ?teamValue . }
     }
     """
@@ -105,41 +100,29 @@ def test_sparql_csv_with_mappings(setup_config):
         pytest.fail(f"Failed to create mapping file: {e}")
 
     query_str = """
-    PREFIX ggf: <http://example.org/>
     PREFIX ex: <http://example.org/>
     PREFIX mycsv: <http://mycsv.org/>
+    PREFIX ggf: <http://ggf.org/>
 
-    # Using SLM-CSV with external mapping file
     SELECT ?x ?z WHERE {
-        BIND(ex:SLM-FILE("./data/results.csv") as ?value)
-        BIND(ex:SLM-FILE("./data/mappings/mycsv.map") as ?mappings)
-        BIND(ex:SLM-CSV(?value, ?mappings) AS ?g)
-
-        graph ?g {
+        BIND(ggf:SLM-FILE("data/results.csv") AS ?value)
+        BIND(ggf:SLM-FILE("data/mappings/mycsv.map") AS ?mappings)
+        BIND(ggf:SLM-CSV(?value, ?mappings) AS ?g)
+        GRAPH ?g {
             ?x mycsv:city-of-soccer ?z .
         }
-    } limit 10
+    } LIMIT 10
     """
 
     result = store.query(query_str)
 
     assert result is not None, "SPARQL query with mapping returned None"
-
     rows = list(result)
+
+    logging.debug(f"Nombre de résultats (mapped CSV): {len(rows)}")
 
     assert len(rows) > 0, "SPARQL query with mapping returned no results"
 
-    # Debug output (optional)
-    # print("\n--- Results for Mapped CSV Query ---")
-    # print_result_as_table(result)
-
-    # try:
-    #     os.remove(mappings_file)
-    # except OSError as e:
-    #     logging.warning(f"Could not clean up mapping file: {e}")
-
 
 if __name__ == "__main__":
-    # to see test with logs...
-    # pytest --log-cli-level=DEBUG tests/test_slm_csv.py
     pytest.main([sys.argv[0]])
