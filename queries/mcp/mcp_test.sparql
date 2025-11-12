@@ -1,7 +1,7 @@
 # run this SPARQL query: queries/mcp/mcp_github.sparql
 # run with slm-run --config config.ini -f queries/mcp/mcp_test.sparql --debug
 
-PREFIX slm:    <http://example.org/>
+PREFIX slm:    <http://ggf.org/>
 PREFIX schema: <http://schema.org/>
 
 SELECT ?s ?name ?g WHERE {

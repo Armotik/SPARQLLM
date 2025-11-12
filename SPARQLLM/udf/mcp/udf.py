@@ -37,12 +37,24 @@ def MCP_CONNECT(transport: str=None, target: str=None, token: str=""):
 def MCP_TOOLS_LIST(handle: str) -> str:
     return json.dumps(_MCP.tools_list(handle))
 
-def MCP_TOOL(engine, handle: str, tool: str, args_json: str) -> str:
+def MCP_TOOL(
+        engine, handle: str,
+        tool: str,
+        args_json: str,
+        mapping_url: str = None
+) -> str:
     args = json.loads(args_json) if isinstance(args_json,str) else args_json
     raw  = _MCP.tools_call(handle, tool, args)
-    res  = postprocess_to_rdf(engine, tool, raw)
-    # mode RDF-only optionnel
-    rdf_only = (_get_conf("SLM-MCP-RDF-ONLY","true").lower() == "true")
-    if rdf_only and "graph" not in res:
-        return json.dumps({"ok": False, "error": "Non-RDF output from MCP tool", "tool": tool})
-    return json.dumps(res)
+
+    if not mapping_url:
+        res  = postprocess_to_rdf(engine, tool, raw)
+        # mode RDF-only optionnel
+        rdf_only = (_get_conf("SLM-MCP-RDF-ONLY","true").lower() == "true")
+        if rdf_only and "graph" not in res:
+            return json.dumps({"ok": False, "error": "Non-RDF output from MCP tool", "tool": tool})
+        return json.dumps(res)
+    else :
+
+        # pour l'instant on retourne un graph vide
+        # TODO: implémenter le mapping
+        return json.dumps({"ok": True, "graph": []})
